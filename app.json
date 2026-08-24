@@ -1,17 +1,28 @@
 {
   "expo": {
-    "name": "workout-log",
+    "name": "筋トレ記録",
     "slug": "workout-log",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0E1116",
+    "splash": {
+      "backgroundColor": "#0E1116",
+      "resizeMode": "contain"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.workoutlog",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.example.workoutlog",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0E1116",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -19,7 +30,23 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "bundler": "metro"
+    },
+    "experiments": {
+      "//": "GitHub Pages は https://<ユーザー名>.github.io/workout-log/ で配信されるため、",
+      "// ": "全アセットのパスにこのサブパスを付ける。リポジトリ名を変えたらここも変えること。",
+      "baseUrl": "/workout-log"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "サムネイル用の写真を選ぶために、写真へのアクセスを許可してください。",
+          "cameraPermission": "サムネイル用の写真を撮影するために、カメラの使用を許可してください。"
+        }
+      ]
+    ]
   }
 }

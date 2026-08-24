@@ -1,0 +1,286 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useMemo } from 'react';
+import {
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import Thumbnail from '../components/Thumbnail';
+import { formatSets, latestRecordFor, relativeDay, sortExercises } from '../format';
+import { colors, radius } from '../theme';
+import { SORT_OPTIONS, type Exercise, type SortState, type WorkoutRecord } from '../types';
+
+type Props = {
+  exercises: Exercise[];
+  records: WorkoutRecord[];
+  sort: SortState;
+  onChangeSort: (sort: SortState) => void;
+  onOpen: (exerciseId: string) => void;
+  onAdd: () => void;
+};
+
+const COLUMNS = 3;
+const GAP = 10;
+const H_PADDING = 14;
+const CARD_PADDING = 8;
+
+export default function HomeScreen({
+  exercises,
+  records,
+  sort,
+  onChangeSort,
+  onOpen,
+  onAdd,
+}: Props) {
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  // 画面幅から左右余白と列間のすき間を引いて、1枚あたりの幅を出す
+  const cardWidth = Math.floor((width - H_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS);
+  const thumbSize = cardWidth - CARD_PADDING * 2;
+
+  const sorted = useMemo(
+    () => sortExercises(exercises, records, sort),
+    [exercises, records, sort]
+  );
+
+  const summaries = useMemo(() => {
+    const map = new Map<string, { text: string; when: string } | null>();
+    for (const ex of exercises) {
+      const last = latestRecordFor(records, ex.id);
+      map.set(ex.id, last ? { text: formatSets(last.sets), when: relativeDay(last.date) } : null);
+    }
+    return map;
+  }, [exercises, records]);
+
+  /** 選択中のチップをもう一度押したら昇順⇄降順を入れ替える */
+  const handleSortPress = (key: SortState['key']) => {
+    if (key === sort.key) {
+      onChangeSort({ key, direction: sort.direction === 'asc' ? 'desc' : 'asc' });
+      return;
+    }
+    const option = SORT_OPTIONS.find((o) => o.key === key)!;
+    onChangeSort({ key, direction: option.defaultDirection });
+  };
+
+  const activeOption = SORT_OPTIONS.find((o) => o.key === sort.key)!;
+  const directionLabel =
+    sort.direction === 'asc' ? activeOption.ascLabel : activeOption.descLabel;
+
+  return (
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <View style={styles.headerTextGroup}>
+          <Text style={styles.title}>筋トレ記録</Text>
+          <Text style={styles.subtitle}>
+            {exercises.length > 0 ? `${exercises.length} 種目` : 'まずは種目を追加しましょう'}
+          </Text>
+        </View>
+        <Pressable
+          onPress={onAdd}
+          hitSlop={10}
+          style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="種目を追加"
+        >
+          <MaterialCommunityIcons name="plus" size={26} color={colors.bg} />
+        </Pressable>
+      </View>
+
+      {exercises.length > 0 ? (
+        <View style={styles.sortSection}>
+          <View style={styles.sortRow}>
+            {SORT_OPTIONS.map(({ key, label, icon }) => {
+              const selected = key === sort.key;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => handleSortPress(key)}
+                  // 見た目は小さく保ちつつ、指で押せる大きさ（44pt 相当）を確保する
+                  hitSlop={{ top: 8, bottom: 8, left: 2, right: 2 }}
+                  style={({ pressed }) => [
+                    styles.sortChip,
+                    selected && styles.sortChipSelected,
+                    pressed && styles.pressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={
+                    selected
+                      ? `並び替え ${label} ${directionLabel}。もう一度押すと逆順`
+                      : `並び替えを ${label} にする`
+                  }
+                >
+                  <MaterialCommunityIcons
+                    name={icon as any}
+                    size={14}
+                    color={selected ? colors.accent : colors.textMuted}
+                  />
+                  <Text style={[styles.sortChipLabel, selected && styles.sortChipLabelSelected]}>
+                    {label}
+                  </Text>
+                  {selected ? (
+                    <MaterialCommunityIcons
+                      name={sort.direction === 'asc' ? 'arrow-up' : 'arrow-down'}
+                      size={13}
+                      color={colors.accent}
+                    />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.sortHint}>{directionLabel}</Text>
+        </View>
+      ) : null}
+
+      <FlatList
+        data={sorted}
+        keyExtractor={(item) => item.id}
+        numColumns={COLUMNS}
+        columnWrapperStyle={styles.column}
+        contentContainerStyle={[
+          styles.listContent,
+          exercises.length === 0 && styles.listContentEmpty,
+        ]}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <MaterialCommunityIcons name="dumbbell" size={52} color={colors.border} />
+            <Text style={styles.emptyTitle}>種目がありません</Text>
+            <Text style={styles.emptyBody}>
+              右上の ＋ から種目を追加してください。{'\n'}
+              アイコンか、自分で撮った写真をサムネイルにできます。
+            </Text>
+          </View>
+        }
+        renderItem={({ item }) => {
+          const summary = summaries.get(item.id);
+          return (
+            <Pressable
+              onPress={() => onOpen(item.id)}
+              style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.name}${summary ? `、前回 ${summary.text}` : '、記録なし'}`}
+            >
+              <Thumbnail exercise={item} size={thumbSize} borderRadius={radius.md} />
+              <Text style={styles.cardName} numberOfLines={2}>
+                {item.name}
+              </Text>
+              {summary ? (
+                <>
+                  <Text style={styles.cardSummary} numberOfLines={1}>
+                    {summary.text}
+                  </Text>
+                  <Text style={styles.cardWhen} numberOfLines={1}>
+                    {summary.when}
+                  </Text>
+                </>
+              ) : (
+                <Text style={styles.cardNoData}>記録なし</Text>
+              )}
+            </Pressable>
+          );
+        }}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    paddingHorizontal: H_PADDING,
+    paddingBottom: 14,
+  },
+  headerTextGroup: { gap: 2 },
+  title: {
+    color: colors.text,
+    fontSize: 30,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  subtitle: { color: colors.textMuted, fontSize: 13 },
+  addButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  sortSection: {
+    paddingHorizontal: H_PADDING,
+    paddingBottom: 12,
+    gap: 5,
+  },
+  sortRow: { flexDirection: 'row', gap: 7 },
+  sortChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 7,
+    paddingHorizontal: 11,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  sortChipSelected: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSoft,
+  },
+  sortChipLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
+  sortChipLabelSelected: { color: colors.accent },
+  sortHint: { color: colors.textMuted, fontSize: 11, paddingLeft: 2 },
+
+  column: { gap: GAP },
+  listContent: {
+    paddingHorizontal: H_PADDING,
+    paddingBottom: 24,
+    gap: GAP,
+  },
+  listContentEmpty: { flexGrow: 1 },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: CARD_PADDING,
+    gap: 1,
+  },
+  cardName: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 7,
+    lineHeight: 15,
+  },
+  cardSummary: { color: colors.accent, fontSize: 10, fontWeight: '600', marginTop: 2 },
+  cardWhen: { color: colors.textMuted, fontSize: 9 },
+  cardNoData: { color: colors.textMuted, fontSize: 10, marginTop: 2 },
+  pressed: { opacity: 0.65 },
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingHorizontal: 32,
+  },
+  emptyTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
+  emptyBody: {
+    color: colors.textMuted,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+});

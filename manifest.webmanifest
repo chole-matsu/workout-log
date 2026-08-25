@@ -1,0 +1,25 @@
+{
+  "name": "筋トレ記録",
+  "short_name": "筋トレ記録",
+  "description": "前回の重量と回数がすぐ分かる筋トレ記録",
+  "start_url": "/workout-log/",
+  "scope": "/workout-log/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E1116",
+  "theme_color": "#0E1116",
+  "icons": [
+    {
+      "src": "/workout-log/app-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/workout-log/app-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

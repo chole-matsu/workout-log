@@ -4,7 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import AdBanner from './src/components/AdBanner';
-import { latestRecordFor } from './src/format';
+import DialogProvider from './src/components/DialogProvider';
 import DetailScreen from './src/screens/DetailScreen';
 import EditExerciseScreen, { type ExerciseDraft } from './src/screens/EditExerciseScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -115,7 +115,20 @@ function Root() {
         : [...records, { id: newId(), exerciseId, date, sets, memo, createdAt: Date.now() }];
 
       commitRecords(next);
-      setRoute({ name: 'home' });
+    },
+    [records, commitRecords]
+  );
+
+  const handleUpdateRecord = useCallback(
+    (recordId: string, sets: WorkoutSet[], memo: string) => {
+      commitRecords(records.map((r) => (r.id === recordId ? { ...r, sets, memo } : r)));
+    },
+    [records, commitRecords]
+  );
+
+  const handleDeleteRecord = useCallback(
+    (recordId: string) => {
+      commitRecords(records.filter((r) => r.id !== recordId));
     },
     [records, commitRecords]
   );
@@ -155,10 +168,12 @@ function Root() {
       <DetailScreen
         key={activeExercise.id}
         exercise={activeExercise}
-        lastRecord={latestRecordFor(records, activeExercise.id)}
+        records={records}
         onBack={() => setRoute({ name: 'home' })}
         onEdit={() => setRoute({ name: 'edit', exerciseId: activeExercise.id })}
-        onSave={(sets, memo) => handleSaveRecord(activeExercise.id, sets, memo)}
+        onSaveToday={(sets, memo) => handleSaveRecord(activeExercise.id, sets, memo)}
+        onUpdateRecord={handleUpdateRecord}
+        onDeleteRecord={handleDeleteRecord}
       />
     );
   } else {
@@ -189,7 +204,9 @@ function Root() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <Root />
+      <DialogProvider>
+        <Root />
+      </DialogProvider>
     </SafeAreaProvider>
   );
 }

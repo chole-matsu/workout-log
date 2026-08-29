@@ -12,6 +12,9 @@ Expo Go」と表示して起動しなくなるため、Expo Go で動かして�
 - サムネイルはアイコン22種から選ぶか、自分で撮影／選択した写真を設定できる
 - サムネイルをタップすると **前回の重量と回数** が表示される
 - そのまま今回のセット（重量 × 回数）を入力して記録できる
+- **推移グラフ** — 最大重量 / 総挙上量を折れ線で表示（直近20件）
+- **履歴一覧** — 過去の記録を新しい順に一覧表示
+- **記録の編集・削除** — 履歴の行をタップすると、その日の記録を editable な入力欄に読み込む
 - **並び替え**：追加順 / 名前順 / 更新順の3基準。選択中のチップをもう一度押すと昇順⇄降順が入れ替わる
 - 画面下部に広告枠（いまはプレースホルダー）
 
@@ -29,6 +32,23 @@ Expo Go」と表示して起動しなくなるため、Expo Go で動かして�
 
 データは端末内の AsyncStorage に保存されます。サーバーもアカウントも不要です。
 写真はキャッシュではなくドキュメント領域へコピーされるので、OS に消されません。
+
+## 実装上の注意（触るときに引っかかりやすい点）
+
+このアプリは iOS（Expo Go）と Web（PWA）の両方で動かすため、
+片方でしか動かない API を避けています。以下は実際に踏んだ問題です。
+
+- **`Alert.alert` は使わないこと。** react-native-web では何も起きず、削除の確認ダイアログが
+  出ないまま削除も実行されません。`src/components/DialogProvider.tsx` の `useDialog()` を使ってください
+- **`onLayout` に依存しないこと。** react-native-web で発火しないことがあり、幅が 0 のまま
+  グラフが描画されませんでした。`useWindowDimensions()` から幅を計算して渡しています
+- **`expo-font` のバージョンを固定していること。** `@expo/vector-icons` の peer 依存が
+  `>=14.0.4` と緩く、放置すると SDK57 用の `expo-font@57` が入れ子で入って
+  Expo Go でアイコンが表示されなくなります。`package.json` の `overrides` で固定済みです。
+  **SDK を上げるときはこの版も一緒に上げてください**
+- **Web の写真は data URL に変換していること。** `expo-image-picker` は Web では `blob:` URL を
+  返しますが、これはページを閉じると無効になります。`persistPhoto()` が 256×256 に縮小して
+  data URL 化しています
 
 ## 開発の始め方
 
@@ -58,6 +78,8 @@ src/storage.ts                 AsyncStorage への保存・読み込み、写真
 src/format.ts                  日付・セット表記の整形、最新記録の抽出、並び替え
 src/components/Thumbnail.tsx   写真 or アイコンのサムネイル
 src/components/AdBanner.tsx    画面下部の広告枠（AdMob 差し替え手順をコメントに記載）
+src/components/ProgressChart.tsx  記録の推移を描く折れ線グラフ
+src/components/DialogProvider.tsx 確認・通知ダイアログ（Alert.alert の代替）
 src/screens/HomeScreen.tsx     トップ画面（3列グリッド＋並び替え）
 src/screens/DetailScreen.tsx   前回の記録の表示 ＋ 今回の記録の入力
 src/screens/EditExerciseScreen.tsx  種目の追加・編集・削除

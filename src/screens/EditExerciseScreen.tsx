@@ -3,7 +3,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useDialog } from '../components/DialogProvider';
 import Thumbnail from '../components/Thumbnail';
 import { EXERCISE_ICONS } from '../icons';
 import { persistPhoto } from '../storage';
@@ -38,6 +38,7 @@ type Props = {
 
 export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDelete }: Props) {
   const insets = useSafeAreaInsets();
+  const dialog = useDialog();
   const isNew = !exercise;
 
   const [name, setName] = useState(exercise?.name ?? '');
@@ -49,10 +50,10 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
   const pickFromCamera = async () => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(
-        'カメラを使えません',
-        'iPhone の「設定」→ このアプリ → カメラ をオンにしてください。'
-      );
+      await dialog.alert({
+        title: 'カメラを使えません',
+        message: 'iPhone の「設定」→ このアプリ → カメラ をオンにしてください。',
+      });
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -67,10 +68,10 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
   const pickFromLibrary = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(
-        '写真にアクセスできません',
-        'iPhone の「設定」→ このアプリ → 写真 を許可してください。'
-      );
+      await dialog.alert({
+        title: '写真にアクセスできません',
+        message: 'iPhone の「設定」→ このアプリ → 写真 を許可してください。',
+      });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -85,7 +86,10 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
   const handleSubmit = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      Alert.alert('種目名が空です', '種目の名前を入力してください。');
+      await dialog.alert({
+        title: '種目名が空です',
+        message: '種目の名前を入力してください。',
+      });
       return;
     }
 
@@ -102,16 +106,15 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!onDelete) return;
-    Alert.alert(
-      `「${exercise?.name}」を削除しますか？`,
-      'この種目の記録もすべて削除されます。元に戻せません。',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        { text: '削除する', style: 'destructive', onPress: onDelete },
-      ]
-    );
+    const ok = await dialog.confirm({
+      title: `「${exercise?.name}」を削除しますか？`,
+      message: 'この種目の記録もすべて削除されます。元に戻せません。',
+      confirmLabel: '削除する',
+      destructive: true,
+    });
+    if (ok) onDelete();
   };
 
   return (
@@ -260,7 +263,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
 
         {onDelete ? (
           <Pressable
-            onPress={confirmDelete}
+            onPress={() => void confirmDelete()}
             style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
             accessibilityRole="button"
           >

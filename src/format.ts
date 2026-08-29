@@ -56,6 +56,21 @@ export function totalVolume(sets: WorkoutSet[]): number {
   return sets.reduce((sum, s) => sum + s.weight * s.reps, 0);
 }
 
+/** そのセッションで扱った最大重量 */
+export function maxWeight(sets: WorkoutSet[]): number {
+  return sets.reduce((max, s) => (s.weight > max ? s.weight : max), 0);
+}
+
+/** その種目の記録を日付の古い順に返す */
+export function recordsForExercise(
+  records: WorkoutRecord[],
+  exerciseId: string
+): WorkoutRecord[] {
+  return records
+    .filter((r) => r.exerciseId === exerciseId)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
+}
+
 /** 追加した順（元の並び） */
 const byAdded = (a: Exercise, b: Exercise) => a.createdAt - b.createdAt;
 

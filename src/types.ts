@@ -60,7 +60,7 @@ export const SORT_OPTIONS: {
   {
     key: 'added',
     label: '追加順',
-    icon: 'tray-arrow-down',
+    icon: 'sort-added',
     defaultDirection: 'asc',
     ascLabel: '古い→新しい',
     descLabel: '新しい→古い',
@@ -68,7 +68,7 @@ export const SORT_OPTIONS: {
   {
     key: 'name',
     label: '名前順',
-    icon: 'sort-alphabetical-variant',
+    icon: 'sort-name',
     defaultDirection: 'asc',
     ascLabel: 'A→Z',
     descLabel: 'Z→A',
@@ -76,7 +76,7 @@ export const SORT_OPTIONS: {
   {
     key: 'recent',
     label: '更新順',
-    icon: 'history',
+    icon: 'sort-recent',
     // 「最近やった種目を先頭に」が自然なので、更新順だけ既定が降順
     defaultDirection: 'desc',
     ascLabel: '古い→新しい',

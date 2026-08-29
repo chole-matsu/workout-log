@@ -1,6 +1,6 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
+import Icon from './Icon';
 import { AD_BANNER_HEIGHT, colors } from '../theme';
 
 /**
@@ -45,7 +45,7 @@ import { AD_BANNER_HEIGHT, colors } from '../theme';
 export default function AdBanner() {
   return (
     <View style={styles.wrap}>
-      <MaterialCommunityIcons name="tag-outline" size={14} color={colors.textMuted} />
+      <Icon name="tag" size={14} color={colors.textMuted} />
       <Text style={styles.label}>広告スペース</Text>
     </View>
   );

@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMemo } from 'react';
 import {
   FlatList,
@@ -10,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import Icon from '../components/Icon';
 import Thumbnail from '../components/Thumbnail';
 import { formatTopSet, latestRecordFor, relativeDay, sortExercises } from '../format';
 import { colors, layout, radius } from '../theme';
@@ -43,8 +43,10 @@ export default function HomeScreen({
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
-  // 画面幅から左右余白と列間のすき間を引いて、1枚あたりの幅を出す
-  const cardWidth = Math.floor((width - H_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS);
+  // 画面幅から左右余白と列間のすき間を引いて、1枚あたりの幅を出す。
+  // 初回レイアウトでは width が 0 で来ることがあるので下限を設ける
+  // （負の値を渡すとサムネイルの SVG が描画に失敗する）
+  const cardWidth = Math.max(Math.floor((width - H_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS), 60);
   const thumbSize = cardWidth - CARD_PADDING * 2;
 
   const sorted = useMemo(
@@ -99,7 +101,7 @@ export default function HomeScreen({
           accessibilityRole="button"
           accessibilityLabel="種目を追加"
         >
-          <MaterialCommunityIcons name="plus" size={26} color={colors.bg} />
+          <Icon name="plus" size={26} color={colors.bg} />
         </Pressable>
       </View>
 
@@ -127,8 +129,8 @@ export default function HomeScreen({
                       : `並び替えを ${label} にする`
                   }
                 >
-                  <MaterialCommunityIcons
-                    name={icon as any}
+                  <Icon
+                    name={icon}
                     size={14}
                     color={selected ? colors.accent : colors.textMuted}
                   />
@@ -136,7 +138,7 @@ export default function HomeScreen({
                     {label}
                   </Text>
                   {selected ? (
-                    <MaterialCommunityIcons
+                    <Icon
                       name={sort.direction === 'asc' ? 'arrow-up' : 'arrow-down'}
                       size={13}
                       color={colors.accent}
@@ -162,7 +164,7 @@ export default function HomeScreen({
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <MaterialCommunityIcons name="dumbbell" size={52} color={colors.border} />
+            <Icon name="dumbbell" size={52} color={colors.border} />
             <Text style={styles.emptyTitle}>種目がありません</Text>
             <Text style={styles.emptyBody}>
               右上の ＋ から種目を追加してください。{'\n'}

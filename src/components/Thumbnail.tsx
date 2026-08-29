@@ -1,7 +1,7 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 
+import Icon from './Icon';
 import { colors, radius } from '../theme';
 import type { Exercise } from '../types';
 
@@ -40,11 +40,7 @@ export default function Thumbnail({ exercise, size, borderRadius }: Props) {
         },
       ]}
     >
-      <MaterialCommunityIcons
-        name={exercise.icon as any}
-        size={Math.round(size * 0.46)}
-        color={exercise.color}
-      />
+      <Icon name={exercise.icon} size={Math.round(size * 0.46)} color={exercise.color} />
     </View>
   );
 }

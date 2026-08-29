@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import Icon from '../components/Icon';
 import { useDialog } from '../components/DialogProvider';
 import ProgressChart, { type ChartPoint } from '../components/ProgressChart';
 import Thumbnail from '../components/Thumbnail';
@@ -80,7 +80,8 @@ export default function DetailScreen({
   const scrollRef = useRef<ScrollView>(null);
   const inputSectionY = useRef(0);
 
-  const chartWidth = screenWidth - H_PADDING * 2 - CHART_CARD_INSET;
+  // 初回レイアウトでは画面幅が 0 で来ることがあるので下限を設ける
+  const chartWidth = Math.max(screenWidth - H_PADDING * 2 - CHART_CARD_INSET, 1);
 
   // 古い順。グラフはこの順、履歴一覧は逆順で使う
   const history = useMemo(
@@ -206,7 +207,7 @@ export default function DetailScreen({
           accessibilityRole="button"
           accessibilityLabel="戻る"
         >
-          <MaterialCommunityIcons name="chevron-left" size={28} color={colors.text} />
+          <Icon name="chevron-left" size={28} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>
           {exercise.name}
@@ -218,7 +219,7 @@ export default function DetailScreen({
           accessibilityRole="button"
           accessibilityLabel="種目を編集"
         >
-          <MaterialCommunityIcons name="pencil" size={20} color={colors.textMuted} />
+          <Icon name="pencil" size={20} color={colors.textMuted} />
         </Pressable>
       </View>
 
@@ -267,7 +268,7 @@ export default function DetailScreen({
                 style={({ pressed }) => [styles.cancelEdit, pressed && styles.pressed]}
                 accessibilityRole="button"
               >
-                <MaterialCommunityIcons name="close" size={14} color={colors.textMuted} />
+                <Icon name="close" size={14} color={colors.textMuted} />
                 <Text style={styles.cancelEditLabel}>編集をやめる</Text>
               </Pressable>
             ) : null}
@@ -316,7 +317,7 @@ export default function DetailScreen({
                   accessibilityRole="button"
                   accessibilityLabel={`${index + 1}セット目を削除`}
                 >
-                  <MaterialCommunityIcons name="close" size={18} color={colors.textMuted} />
+                  <Icon name="close" size={18} color={colors.textMuted} />
                 </Pressable>
               </View>
             ))}
@@ -328,7 +329,7 @@ export default function DetailScreen({
                 style={({ pressed }) => [styles.addSetButton, pressed && styles.pressed]}
                 accessibilityRole="button"
               >
-                <MaterialCommunityIcons name="plus" size={18} color={colors.accent} />
+                <Icon name="plus" size={18} color={colors.accent} />
                 <Text style={styles.addSetLabel}>セットを追加</Text>
               </Pressable>
               <View style={styles.colRemove} />
@@ -349,7 +350,7 @@ export default function DetailScreen({
             style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}
             accessibilityRole="button"
           >
-            <MaterialCommunityIcons name="check" size={20} color={colors.bg} />
+            <Icon name="check" size={20} color={colors.bg} />
             <Text style={styles.saveLabel}>{isEditing ? '更新する' : '記録する'}</Text>
           </Pressable>
         </View>
@@ -448,8 +449,8 @@ export default function DetailScreen({
                       accessibilityRole="button"
                       accessibilityLabel={`${formatDate(record.date)} の記録を削除`}
                     >
-                      <MaterialCommunityIcons
-                        name="trash-can-outline"
+                      <Icon
+                        name="trash"
                         size={18}
                         color={colors.textMuted}
                       />

@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import {
@@ -15,15 +14,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import Icon from '../components/Icon';
 import { useDialog } from '../components/DialogProvider';
 import Thumbnail from '../components/Thumbnail';
 import { EXERCISE_ICONS } from '../icons';
 import { persistPhoto } from '../storage';
 import { colors, layout, PALETTE, radius } from '../theme';
 
+import type { Exercise } from '../types';
+
 const ICON_COLUMNS = 5;
 const ICON_GAP = 10;
-import type { Exercise } from '../types';
 
 export type ExerciseDraft = {
   name: string;
@@ -46,9 +47,12 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
   const { width: screenWidth } = useWindowDimensions();
   const isNew = !exercise;
 
-  // 固定サイズだと右側に余白が残るので、画面幅から1マスの大きさを出す
-  const iconCellSize = Math.floor(
-    (screenWidth - layout.gutter * 2 - ICON_GAP * (ICON_COLUMNS - 1)) / ICON_COLUMNS
+  // 固定サイズだと右側に余白が残るので、画面幅から1マスの大きさを出す。
+  // 初回レイアウトでは画面幅が 0 で来ることがあり、そのままだと負の値になって
+  // SVG が「幅が負」で描画に失敗するため下限を設ける。
+  const iconCellSize = Math.max(
+    Math.floor((screenWidth - layout.gutter * 2 - ICON_GAP * (ICON_COLUMNS - 1)) / ICON_COLUMNS),
+    24
   );
 
   const [name, setName] = useState(exercise?.name ?? '');
@@ -140,7 +144,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
           accessibilityRole="button"
           accessibilityLabel="キャンセル"
         >
-          <MaterialCommunityIcons name="close" size={24} color={colors.text} />
+          <Icon name="close" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>{isNew ? '種目を追加' : '種目を編集'}</Text>
         <View style={styles.headerSpacer} />
@@ -176,7 +180,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
               style={({ pressed }) => [styles.photoButton, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              <MaterialCommunityIcons name="camera" size={20} color={colors.text} />
+              <Icon name="camera" size={20} color={colors.text} />
               <Text style={styles.photoButtonLabel}>写真を撮る</Text>
             </Pressable>
             <Pressable
@@ -184,7 +188,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
               style={({ pressed }) => [styles.photoButton, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              <MaterialCommunityIcons name="image-outline" size={20} color={colors.text} />
+              <Icon name="image" size={20} color={colors.text} />
               <Text style={styles.photoButtonLabel}>写真を選ぶ</Text>
             </Pressable>
           </View>
@@ -195,7 +199,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
               style={({ pressed }) => [styles.clearPhoto, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              <MaterialCommunityIcons name="trash-can-outline" size={16} color={colors.danger} />
+              <Icon name="trash" size={16} color={colors.danger} />
               <Text style={styles.clearPhotoLabel}>写真を外してアイコンに戻す</Text>
             </Pressable>
           ) : null}
@@ -225,8 +229,8 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <MaterialCommunityIcons
-                    name={name as any}
+                  <Icon
+                    name={name}
                     size={Math.round(iconCellSize * 0.44)}
                     color={selected ? color : colors.textMuted}
                   />
@@ -266,7 +270,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
             <ActivityIndicator color={colors.bg} />
           ) : (
             <>
-              <MaterialCommunityIcons name="check" size={20} color={colors.bg} />
+              <Icon name="check" size={20} color={colors.bg} />
               <Text style={styles.saveLabel}>{isNew ? '追加する' : '保存する'}</Text>
             </>
           )}
@@ -278,7 +282,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
             style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
             accessibilityRole="button"
           >
-            <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.danger} />
+            <Icon name="trash" size={18} color={colors.danger} />
             <Text style={styles.deleteLabel}>この種目を削除</Text>
           </Pressable>
         ) : null}

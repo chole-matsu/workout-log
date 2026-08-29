@@ -42,15 +42,19 @@ Expo Go」と表示して起動しなくなるため、Expo Go で動かして�
   出ないまま削除も実行されません。`src/components/DialogProvider.tsx` の `useDialog()` を使ってください
 - **`onLayout` に依存しないこと。** react-native-web で発火しないことがあり、幅が 0 のまま
   グラフが描画されませんでした。`useWindowDimensions()` から幅を計算して渡しています
-- **`expo-font` のバージョンを固定していること。** `@expo/vector-icons` の peer 依存が
-  `>=14.0.4` と緩く、放置すると SDK57 用の `expo-font@57` が入れ子で入って
-  Expo Go でアイコンが表示されなくなります。`package.json` の `overrides` で固定済みです。
-  **SDK を上げるときはこの版も一緒に上げてください**
+- **アイコンフォントは使わないこと。** 以前は `@expo/vector-icons` を使っていましたが、
+  `expo-font` のバージョンが噛み合わずアイコンが一切表示されない問題が起きました。
+  いまは `src/components/Icon.tsx` ですべて SVG で描いています。
+  追加のフォント読み込みが無いので、iOS でも Web でも必ず表示されます。
+  アイコンを増やすときは `GLYPHS` に 24×24 の座標系でパスを足してください
 - **Web の写真は data URL に変換していること。** `expo-image-picker` は Web では `blob:` URL を
   返しますが、これはページを閉じると無効になります。`persistPhoto()` が 256×256 に縮小して
   data URL 化しています
 - **flex の中の `TextInput` には `minWidth: 0` を付けること。** これが無いと `<input>` の
   既定の固有幅（約217px）が縮まず、入力欄が画面からはみ出します（`colInput` を参照）
+- **画面幅から寸法を計算するときは下限を設けること。** `useWindowDimensions()` は初回
+  レイアウトで 0 を返すことがあり、そのまま余白を引くと負の値になって SVG の描画が
+  失敗します（`Math.max(..., n)` で囲む）
 
 ## レイアウトの決まりごと
 
@@ -90,7 +94,8 @@ npx expo start --tunnel
 App.tsx                        画面遷移と、種目／記録データの管理
 src/types.ts                   データ型と並び替えの定義（SORT_OPTIONS）
 src/theme.ts                   配色・角丸・広告枠の高さ
-src/icons.ts                   サムネイル用アイコン一覧
+src/components/Icon.tsx        全アイコンの SVG 定義（フォント不使用）
+src/icons.ts                   サムネイル用アイコン一覧（Icon.tsx の再エクスポート）
 src/storage.ts                 AsyncStorage への保存・読み込み、写真の永続化
 src/format.ts                  日付・セット表記の整形、最新記録の抽出、並び替え
 src/components/Thumbnail.tsx   写真 or アイコンのサムネイル

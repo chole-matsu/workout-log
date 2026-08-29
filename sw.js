@@ -1,5 +1,5 @@
 // 自動生成 — scripts/build-pwa.mjs が作ります。直接編集しないでください。
-const CACHE = 'workout-log-fa297cd8a29a';
+const CACHE = 'workout-log-f857957d83c6';
 const PRECACHE = [
   "/workout-log/",
   "/workout-log/app-icon.png",
@@ -7,7 +7,7 @@ const PRECACHE = [
   "/workout-log/index.html",
   "/workout-log/manifest.webmanifest",
   "/workout-log/metadata.json",
-  "/workout-log/_expo/static/js/web/index-94fa6580e6782165cb4e572a1af34f8a.js"
+  "/workout-log/_expo/static/js/web/index-26fa3c46cfd386f991278ea2082f46d3.js"
 ];
 
 self.addEventListener('install', (event) => {

@@ -1,5 +1,5 @@
 // 自動生成 — scripts/build-pwa.mjs が作ります。直接編集しないでください。
-const CACHE = 'workout-log-361cef734093';
+const CACHE = 'workout-log-fa297cd8a29a';
 const PRECACHE = [
   "/workout-log/",
   "/workout-log/app-icon.png",
@@ -27,11 +27,30 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// キャッシュ優先。ジムで電波が無くても開けるようにする。
+const SHELL = '/workout-log/';
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
 
+  // ページ本体はネットワーク優先。
+  // ここをキャッシュ優先にすると、公開し直しても古い画面が出続けてしまう。
+  // 読み込めたら控えを取っておき、電波が無いときはそれを返す。
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(SHELL, copy));
+          return res;
+        })
+        .catch(() => caches.match(SHELL).then((hit) => hit || caches.match(req)))
+    );
+    return;
+  }
+
+  // JS や画像はファイル名にハッシュが入っていて、中身が変われば名前も変わる。
+  // 古いものを返す心配が無いのでキャッシュ優先でよい。
   event.respondWith(
     caches.match(req).then((hit) => {
       if (hit) return hit;
@@ -43,8 +62,7 @@ self.addEventListener('fetch', (event) => {
           }
           return res;
         })
-        // オフラインで未キャッシュの画面を開こうとしたときはトップを返す
-        .catch(() => caches.match('/workout-log/'));
+        .catch(() => caches.match(SHELL));
     })
   );
 });

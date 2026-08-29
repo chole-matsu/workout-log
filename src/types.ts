@@ -35,8 +35,10 @@ export type WorkoutRecord = {
  * - added:  追加した順（既定。タイルの位置が動かない）
  * - name:   種目名
  * - recent: 最後に記録した日
+ * - color:  サムネイルの色（色相順）
+ * - custom: 自分でドラッグして決めた並び
  */
-export type SortKey = 'added' | 'name' | 'recent';
+export type SortKey = 'added' | 'name' | 'recent' | 'color' | 'custom';
 
 export type SortDirection = 'asc' | 'desc';
 
@@ -56,7 +58,18 @@ export const SORT_OPTIONS: {
   /** 向きを説明する文言（チップに表示する） */
   ascLabel: string;
   descLabel: string;
+  /** true のとき、ドラッグでタイルを並べ替えられる */
+  draggable?: boolean;
 }[] = [
+  {
+    key: 'custom',
+    label: 'お気に入り',
+    icon: 'star',
+    defaultDirection: 'asc',
+    ascLabel: 'ドラッグで並べ替え',
+    descLabel: 'ドラッグで並べ替え（逆順）',
+    draggable: true,
+  },
   {
     key: 'added',
     label: '追加順',
@@ -81,5 +94,13 @@ export const SORT_OPTIONS: {
     defaultDirection: 'desc',
     ascLabel: '古い→新しい',
     descLabel: '新しい→古い',
+  },
+  {
+    key: 'color',
+    label: '色順',
+    icon: 'sort-color',
+    defaultDirection: 'asc',
+    ascLabel: '赤→紫（色相順）',
+    descLabel: '紫→赤（色相順）',
   },
 ];

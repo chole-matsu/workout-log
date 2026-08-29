@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import DraggableGrid from '../components/DraggableGrid';
 import Icon from '../components/Icon';
 import Thumbnail from '../components/Thumbnail';
 import { formatTopSet, latestRecordFor, relativeDay, sortExercises } from '../format';
@@ -24,6 +25,9 @@ type Props = {
   onOpen: (exerciseId: string) => void;
   onAdd: () => void;
   onOpenTheme: () => void;
+  /** お気に入り順の並び（種目 id の配列） */
+  customOrder: string[];
+  onChangeCustomOrder: (ids: string[]) => void;
 };
 
 const COLUMNS = 3;
@@ -33,6 +37,23 @@ const CARD_PADDING = 8;
 /** 種目名の表示行数。全カードでこの高さを確保して、行内の高さを揃える */
 const NAME_LINES = 2;
 const NAME_LINE_HEIGHT = 15;
+const SUMMARY_LINE_HEIGHT = 14;
+const META_LINE_HEIGHT = 12;
+
+/**
+ * カードの高さ。ドラッグでの並べ替えはタイルを絶対配置するため、
+ * 高さが中身任せだと位置を計算できない。各行の高さを固定して足し上げる。
+ */
+const cardHeightFor = (thumbSize: number) =>
+  CARD_PADDING * 2 + // 上下の内側余白
+  thumbSize +
+  7 + // サムネイルと名前のあいだ
+  NAME_LINE_HEIGHT * NAME_LINES +
+  3 +
+  SUMMARY_LINE_HEIGHT +
+  1 +
+  META_LINE_HEIGHT +
+  2; // 枠線
 
 export default function HomeScreen({
   exercises,
@@ -42,22 +63,28 @@ export default function HomeScreen({
   onOpen,
   onAdd,
   onOpenTheme,
+  customOrder,
+  onChangeCustomOrder,
 }: Props) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
   const styles = useThemedStyles(makeStyles);
+  const [dragging, setDragging] = useState(false);
 
   // 画面幅から左右余白と列間のすき間を引いて、1枚あたりの幅を出す。
   // 初回レイアウトでは width が 0 で来ることがあるので下限を設ける
   // （負の値を渡すとサムネイルの SVG が描画に失敗する）
   const cardWidth = Math.max(Math.floor((width - H_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS), 60);
   const thumbSize = cardWidth - CARD_PADDING * 2;
+  const cardHeight = cardHeightFor(thumbSize);
 
   const sorted = useMemo(
-    () => sortExercises(exercises, records, sort),
-    [exercises, records, sort]
+    () => sortExercises(exercises, records, sort, customOrder),
+    [exercises, records, sort, customOrder]
   );
+
+  const isDraggable = SORT_OPTIONS.find((o) => o.key === sort.key)?.draggable === true;
 
   const summaries = useMemo(() => {
     const map = new Map<string, { top: string; meta: string } | null>();
@@ -89,6 +116,35 @@ export default function HomeScreen({
   const activeOption = SORT_OPTIONS.find((o) => o.key === sort.key)!;
   const directionLabel =
     sort.direction === 'asc' ? activeOption.ascLabel : activeOption.descLabel;
+
+  /** カードの中身。ドラッグ用グリッドと通常グリッドで共通に使う */
+  const renderCard = (item: Exercise, isDragging: boolean) => {
+    const summary = summaries.get(item.id);
+    return (
+      <View
+        style={[styles.card, isDragging && styles.cardDragging]}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.name}${summary ? `、前回 ${summary.top}` : '、記録なし'}`}
+      >
+        <Thumbnail exercise={item} size={thumbSize} borderRadius={radius.md} />
+        {/* 名前の高さを固定して、名前が1行でも2行でもカードの高さを揃える */}
+        <View style={styles.cardNameBox}>
+          <Text style={styles.cardName} numberOfLines={NAME_LINES}>
+            {item.name}
+          </Text>
+        </View>
+        <Text
+          style={[styles.cardSummary, !summary && styles.cardSummaryEmpty]}
+          numberOfLines={1}
+        >
+          {summary ? summary.top : '記録なし'}
+        </Text>
+        <Text style={styles.cardMeta} numberOfLines={1}>
+          {summary ? summary.meta : ' '}
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -123,7 +179,12 @@ export default function HomeScreen({
 
       {exercises.length > 0 ? (
         <View style={styles.sortSection}>
-          <View style={styles.sortRow}>
+          {/* 選択肢が5つあり画面幅に収まらないので横スクロールにする */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.sortRow}
+          >
             {SORT_OPTIONS.map(({ key, label, icon }) => {
               const selected = key === sort.key;
               return (
@@ -163,60 +224,66 @@ export default function HomeScreen({
                 </Pressable>
               );
             })}
-          </View>
-          <Text style={styles.sortHint}>{directionLabel}</Text>
+          </ScrollView>
+          <Text style={styles.sortHint}>
+            {isDraggable ? 'タイルを長押しして動かすと並べ替えられます' : directionLabel}
+          </Text>
         </View>
       ) : null}
 
-      <FlatList
-        data={sorted}
-        keyExtractor={(item) => item.id}
-        numColumns={COLUMNS}
-        columnWrapperStyle={styles.column}
-        contentContainerStyle={[
-          styles.listContent,
-          exercises.length === 0 && styles.listContentEmpty,
-        ]}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Icon name="dumbbell" size={52} color={c.border} />
-            <Text style={styles.emptyTitle}>種目がありません</Text>
-            <Text style={styles.emptyBody}>
-              右上の ＋ から種目を追加してください。{'\n'}
-              アイコンか、自分で撮った写真をサムネイルにできます。
-            </Text>
-          </View>
-        }
-        renderItem={({ item }) => {
-          const summary = summaries.get(item.id);
-          return (
-            <Pressable
-              onPress={() => onOpen(item.id)}
-              style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={`${item.name}${summary ? `、前回 ${summary.top}` : '、記録なし'}`}
-            >
-              <Thumbnail exercise={item} size={thumbSize} borderRadius={radius.md} />
-              {/* 名前の高さを固定して、名前が1行でも2行でもカードの高さを揃える */}
-              <View style={styles.cardNameBox}>
-                <Text style={styles.cardName} numberOfLines={NAME_LINES}>
-                  {item.name}
-                </Text>
-              </View>
-              <Text
-                style={[styles.cardSummary, !summary && styles.cardSummaryEmpty]}
-                numberOfLines={1}
-              >
-                {summary ? summary.top : '記録なし'}
-              </Text>
-              <Text style={styles.cardMeta} numberOfLines={1}>
-                {summary ? summary.meta : ' '}
-              </Text>
-            </Pressable>
-          );
-        }}
-      />
+      {exercises.length === 0 ? (
+        <View style={styles.empty}>
+          <Icon name="dumbbell" size={52} color={c.border} />
+          <Text style={styles.emptyTitle}>種目がありません</Text>
+          <Text style={styles.emptyBody}>
+            右上の ＋ から種目を追加してください。{'\n'}
+            アイコンか、自分で撮った写真をサムネイルにできます。
+          </Text>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          // ドラッグ中に画面が動くと狙った位置に置けないので、そのあいだは止める
+          scrollEnabled={!dragging}
+        >
+          {isDraggable ? (
+            // お気に入り順のときだけドラッグできるグリッドを使う。
+            // 他の並び順では、実績のある Pressable のままにしておく。
+            <DraggableGrid
+              items={sorted}
+              keyOf={(item) => item.id}
+              onPressItem={(item) => onOpen(item.id)}
+              onReorder={(ids) => {
+                setDragging(false);
+                onChangeCustomOrder(ids);
+              }}
+              onDragStart={() => setDragging(true)}
+              draggable
+              columns={COLUMNS}
+              gap={GAP}
+              cardWidth={cardWidth}
+              cardHeight={cardHeight}
+              renderItem={(item, isDragging) => renderCard(item, isDragging)}
+            />
+          ) : (
+            <View style={styles.grid}>
+              {sorted.map((item) => (
+                <Pressable
+                  key={item.id}
+                  onPress={() => onOpen(item.id)}
+                  style={({ pressed }) => [
+                    { width: cardWidth, height: cardHeight },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  {renderCard(item, false)}
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -257,11 +324,11 @@ const makeStyles = (c: Palette) =>
   },
 
   sortSection: {
-    paddingHorizontal: H_PADDING,
     paddingBottom: 12,
     gap: 5,
   },
-  sortRow: { flexDirection: 'row', gap: 7 },
+  // 横スクロールの中身なので、余白はここで持たせる
+  sortRow: { flexDirection: 'row', gap: 7, paddingHorizontal: H_PADDING },
   sortChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -281,20 +348,26 @@ const makeStyles = (c: Palette) =>
   sortChipLabelSelected: { color: c.accent },
   sortHint: { color: c.textMuted, fontSize: 11, paddingLeft: 2 },
 
-  column: { gap: GAP },
   listContent: {
     paddingHorizontal: H_PADDING,
     paddingBottom: 24,
-    gap: GAP,
   },
-  listContentEmpty: { flexGrow: 1 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
   card: {
+    flex: 1,
     backgroundColor: c.surface,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: c.border,
     padding: CARD_PADDING,
-    gap: 1,
+  },
+  // 掴んでいるタイルは浮かせて、どれを動かしているか分かるようにする
+  cardDragging: {
+    borderColor: c.accent,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
   },
   cardNameBox: { height: NAME_LINE_HEIGHT * NAME_LINES, marginTop: 7, justifyContent: 'flex-start' },
   cardName: {
@@ -303,9 +376,15 @@ const makeStyles = (c: Palette) =>
     fontWeight: '700',
     lineHeight: NAME_LINE_HEIGHT,
   },
-  cardSummary: { color: c.accent, fontSize: 11, fontWeight: '700', marginTop: 3 },
+  cardSummary: {
+    color: c.accent,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 3,
+    lineHeight: SUMMARY_LINE_HEIGHT,
+  },
   cardSummaryEmpty: { color: c.textMuted, fontWeight: '500' },
-  cardMeta: { color: c.textMuted, fontSize: 9, marginTop: 1 },
+  cardMeta: { color: c.textMuted, fontSize: 9, marginTop: 1, lineHeight: META_LINE_HEIGHT },
   pressed: { opacity: 0.65 },
   empty: {
     flex: 1,

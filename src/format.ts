@@ -85,16 +85,57 @@ export function recordsForExercise(
 const byAdded = (a: Exercise, b: Exercise) => a.createdAt - b.createdAt;
 
 /**
+ * 色を 0〜360 の色相に変換する。赤=0、黄=60、緑=120、青=240、紫=300。
+ * 彩度が無い色（白・黒・灰）は色相を持たないので、末尾に回すため 361 を返す。
+ */
+export function hueOf(hex: string): number {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return 361;
+  const n = parseInt(m[1], 16);
+  const r = ((n >> 16) & 255) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  if (d === 0) return 361;
+
+  let h: number;
+  if (max === r) h = ((g - b) / d) % 6;
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+
+  h *= 60;
+  return h < 0 ? h + 360 : h;
+}
+
+/**
  * 指定した並び順で種目を並べ替える。元の配列は変更しない。
  * どの基準でも、比較が引き分けたときは追加順に落とす（表示が毎回ぶれないように）。
  */
 export function sortExercises(
   exercises: Exercise[],
   records: WorkoutRecord[],
-  sort: SortState
+  sort: SortState,
+  /** お気に入り順で使う、自分で並べ替えた種目 id の並び */
+  customOrder: string[] = []
 ): Exercise[] {
   const sorted = [...exercises];
   const dir = sort.direction === 'asc' ? 1 : -1;
+
+  if (sort.key === 'custom') {
+    // 並びに無い種目（新しく追加したもの）は末尾へ
+    const rank = new Map(customOrder.map((id, i) => [id, i]));
+    const at = (e: Exercise) => rank.get(e.id) ?? Number.MAX_SAFE_INTEGER;
+    sorted.sort((a, b) => dir * (at(a) - at(b)) || byAdded(a, b));
+    return sorted;
+  }
+
+  if (sort.key === 'color') {
+    sorted.sort((a, b) => dir * (hueOf(a.color) - hueOf(b.color)) || byAdded(a, b));
+    return sorted;
+  }
 
   if (sort.key === 'name') {
     // 'ja' 指定で ひらがな・カタカナ・漢字・英字が自然な順に並ぶ

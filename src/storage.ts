@@ -9,6 +9,7 @@ const EXERCISES_KEY = 'workout-log/exercises/v1';
 const RECORDS_KEY = 'workout-log/records/v1';
 const SORT_KEY = 'workout-log/sort/v2';
 const THEME_KEY = 'workout-log/theme/v1';
+const CUSTOM_ORDER_KEY = 'workout-log/customOrder/v1';
 const PHOTO_DIR_NAME = 'thumbnails';
 
 export function newId(): string {
@@ -107,6 +108,21 @@ export async function loadTheme(): Promise<ThemeName> {
 
 export async function saveTheme(name: ThemeName): Promise<void> {
   await AsyncStorage.setItem(THEME_KEY, name);
+}
+
+/**
+ * お気に入り順の並び。種目 id を並べただけの配列として持つ。
+ * Exercise 自体に順番を持たせないので、既存データの作り直しが要らない。
+ * ここに無い種目は末尾、消えた種目の id が残っていても無視される。
+ */
+export async function loadCustomOrder(): Promise<string[]> {
+  const stored = await readJson<unknown>(CUSTOM_ORDER_KEY, []);
+  if (!Array.isArray(stored)) return [];
+  return stored.filter((id): id is string => typeof id === 'string');
+}
+
+export async function saveCustomOrder(order: string[]): Promise<void> {
+  await writeJson(CUSTOM_ORDER_KEY, order);
 }
 
 /** Web 用サムネイルの一辺（px）。表示は最大 128px なので 256 あれば足りる */

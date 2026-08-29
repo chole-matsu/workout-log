@@ -13,11 +13,13 @@ import {
   deletePhoto,
   loadExercises,
   loadRecords,
+  loadCustomOrder,
   loadSort,
   loadTheme,
   newId,
   saveExercises,
   saveRecords,
+  saveCustomOrder,
   saveSort,
   saveTheme,
   today,
@@ -39,26 +41,34 @@ function Root() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [records, setRecords] = useState<WorkoutRecord[]>([]);
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
+  const [customOrder, setCustomOrder] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [route, setRoute] = useState<Route>({ name: 'home' });
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [ex, rec, storedSort] = await Promise.all([
+      const [ex, rec, storedSort, storedOrder] = await Promise.all([
         loadExercises(),
         loadRecords(),
         loadSort(),
+        loadCustomOrder(),
       ]);
       if (cancelled) return;
       setExercises(ex);
       setRecords(rec);
       setSort(storedSort);
+      setCustomOrder(storedOrder);
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  const handleChangeCustomOrder = useCallback((ids: string[]) => {
+    setCustomOrder(ids);
+    void saveCustomOrder(ids);
   }, []);
 
   const handleChangeSort = useCallback((next: SortState) => {
@@ -192,6 +202,8 @@ function Root() {
         onOpen={(exerciseId) => setRoute({ name: 'detail', exerciseId })}
         onAdd={() => setRoute({ name: 'edit' })}
         onOpenTheme={() => setThemePickerOpen(true)}
+        customOrder={customOrder}
+        onChangeCustomOrder={handleChangeCustomOrder}
       />
     );
   }

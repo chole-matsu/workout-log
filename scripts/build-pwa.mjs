@@ -61,8 +61,6 @@ const manifest = {
 await writeFile(path.join(DIST, 'manifest.webmanifest'), JSON.stringify(manifest, null, 2));
 
 // ── 2. Service Worker（オフライン対応）────────────────────
-// ビルドのたびに中身が変わるので、ファイル一覧のハッシュをキャッシュ名にする。
-// こうすると内容が変わったときだけ古いキャッシュが捨てられる。
 const files = await listFiles(DIST);
 const precache = [
   `${BASE}/`,
@@ -70,13 +68,8 @@ const precache = [
     .filter((f) => f !== 'sw.js' && !f.endsWith('.map'))
     .map((f) => url(f)),
 ];
-const version = createHash('sha1').update(precache.join('\n')).digest('hex').slice(0, 12);
 
-const sw = `// 自動生成 — scripts/build-pwa.mjs が作ります。直接編集しないでください。
-const CACHE = 'workout-log-${version}';
-const PRECACHE = ${JSON.stringify(precache, null, 2)};
-
-self.addEventListener('install', (event) => {
+const swLogic = `self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE)
       // 1つ失敗しても全体を巻き添えにしない
@@ -93,11 +86,30 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// キャッシュ優先。ジムで電波が無くても開けるようにする。
+const SHELL = '${BASE}/';
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
 
+  // ページ本体はネットワーク優先。
+  // ここをキャッシュ優先にすると、公開し直しても古い画面が出続けてしまう。
+  // 読み込めたら控えを取っておき、電波が無いときはそれを返す。
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(SHELL, copy));
+          return res;
+        })
+        .catch(() => caches.match(SHELL).then((hit) => hit || caches.match(req)))
+    );
+    return;
+  }
+
+  // JS や画像はファイル名にハッシュが入っていて、中身が変われば名前も変わる。
+  // 古いものを返す心配が無いのでキャッシュ優先でよい。
   event.respondWith(
     caches.match(req).then((hit) => {
       if (hit) return hit;
@@ -109,12 +121,25 @@ self.addEventListener('fetch', (event) => {
           }
           return res;
         })
-        // オフラインで未キャッシュの画面を開こうとしたときはトップを返す
-        .catch(() => caches.match('${BASE}/'));
+        .catch(() => caches.match(SHELL));
     })
   );
 });
 `;
+
+// キャッシュ名は「配信するファイル一覧」と「SW の処理内容」の両方から作る。
+// ファイル一覧だけで作ると、SW のロジックを直したのに名前が変わらず、
+// 古いキャッシュが捨てられないまま残ってしまう。
+const version = createHash('sha1')
+  .update(precache.join('\n') + swLogic)
+  .digest('hex')
+  .slice(0, 12);
+
+const sw = `// 自動生成 — scripts/build-pwa.mjs が作ります。直接編集しないでください。
+const CACHE = 'workout-log-${version}';
+const PRECACHE = ${JSON.stringify(precache, null, 2)};
+
+${swLogic}`;
 await writeFile(path.join(DIST, 'sw.js'), sw);
 
 // ── 3. index.html に PWA 用のタグを差し込む ────────────────

@@ -56,6 +56,16 @@ export function totalVolume(sets: WorkoutSet[]): number {
   return sets.reduce((sum, s) => sum + s.weight * s.reps, 0);
 }
 
+/**
+ * 一番重いセットだけを短く表す。"92.5kg×8"
+ * トップ画面の3列カードには formatSets の全文が入りきらないため使う。
+ */
+export function formatTopSet(sets: WorkoutSet[]): string {
+  if (sets.length === 0) return '';
+  const top = sets.reduce((best, s) => (s.weight > best.weight ? s : best), sets[0]);
+  return `${top.weight}kg×${top.reps}`;
+}
+
 /** そのセッションで扱った最大重量 */
 export function maxWeight(sets: WorkoutSet[]): number {
   return sets.reduce((max, s) => (s.weight > max ? s.weight : max), 0);

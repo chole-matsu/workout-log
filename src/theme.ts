@@ -29,5 +29,15 @@ export const radius = {
   lg: 20,
 };
 
+export const layout = {
+  /** 画面左右の余白。全画面でこの値に揃える */
+  gutter: 16,
+  /**
+   * ヘッダーのアイコンボタンに掛ける負のマージン。
+   * ボタンの当たり判定は大きいまま、アイコンの見た目の位置を gutter に合わせる。
+   */
+  headerIconOffset: -8,
+};
+
 /** 標準バナー広告の高さ */
 export const AD_BANNER_HEIGHT = 50;

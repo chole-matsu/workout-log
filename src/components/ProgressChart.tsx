@@ -21,9 +21,11 @@ type Props = {
   height?: number;
 };
 
-const PAD_X = 14;
-const PAD_TOP = 18;
-const PAD_BOTTOM = 22;
+/** 左端に確保する目盛り用の幅。ここに最高値・最低値を書くので点とぶつからない */
+const GUTTER = 46;
+const PAD_RIGHT = 12;
+const PAD_TOP = 16;
+const PAD_BOTTOM = 20;
 
 /** "2026-08-24" → "8/24" */
 const shortDate = (d: string) => {
@@ -55,76 +57,95 @@ export default function ProgressChart({ points, width, unit, height = 150 }: Pro
   const min = rawMin - pad;
   const max = rawMax + pad;
 
-  const plotW = Math.max(width - PAD_X * 2, 1);
+  const plotLeft = GUTTER;
+  const plotRight = width - PAD_RIGHT;
+  const plotW = Math.max(plotRight - plotLeft, 1);
   const plotH = height - PAD_TOP - PAD_BOTTOM;
 
   const x = (i: number) =>
-    points.length === 1 ? PAD_X + plotW / 2 : PAD_X + (plotW * i) / (points.length - 1);
+    points.length === 1 ? plotLeft + plotW / 2 : plotLeft + (plotW * i) / (points.length - 1);
   const y = (v: number) => PAD_TOP + plotH * (1 - (v - min) / (max - min));
 
   const coords = points.map((p, i) => ({ cx: x(i), cy: y(p.value), ...p }));
   const polyline = coords.map((c) => `${c.cx},${c.cy}`).join(' ');
   const last = coords[coords.length - 1];
+  // 目盛りと同じ値なら重ねて出さない
+  const showLastValue = last.value !== rawMax && last.value !== rawMin;
 
   return (
     <View style={{ height, width }}>
       <Svg width={width} height={height}>
-          {/* 最高値・最低値の位置に薄い補助線を引く */}
+        {/* 最高値・最低値の位置に薄い補助線を引く */}
+        <Line
+          x1={plotLeft}
+          y1={y(rawMax)}
+          x2={plotRight}
+          y2={y(rawMax)}
+          stroke={colors.border}
+          strokeWidth={1}
+          strokeDasharray="3 4"
+        />
+        {rawMax !== rawMin ? (
           <Line
-            x1={PAD_X}
-            y1={y(rawMax)}
-            x2={width - PAD_X}
-            y2={y(rawMax)}
-            stroke={colors.border}
-            strokeWidth={1}
-            strokeDasharray="3 4"
-          />
-          <Line
-            x1={PAD_X}
+            x1={plotLeft}
             y1={y(rawMin)}
-            x2={width - PAD_X}
+            x2={plotRight}
             y2={y(rawMin)}
             stroke={colors.border}
             strokeWidth={1}
             strokeDasharray="3 4"
           />
+        ) : null}
 
-          <SvgText x={PAD_X} y={y(rawMax) - 5} fill={colors.textMuted} fontSize={10}>
-            {`${fmt(rawMax)}${unit}`}
-          </SvgText>
-          {rawMax !== rawMin ? (
-            <SvgText x={PAD_X} y={y(rawMin) + 12} fill={colors.textMuted} fontSize={10}>
-              {`${fmt(rawMin)}${unit}`}
-            </SvgText>
-          ) : null}
-
-          {points.length > 1 ? (
-            <Polyline
-              points={polyline}
-              fill="none"
-              stroke={colors.accent}
-              strokeWidth={2}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-          ) : null}
-
-          {coords.map((c, i) => (
-            <Circle
-              key={`${c.date}-${i}`}
-              cx={c.cx}
-              cy={c.cy}
-              r={i === coords.length - 1 ? 4.5 : 3}
-              fill={i === coords.length - 1 ? colors.accent : colors.surface}
-              stroke={colors.accent}
-              strokeWidth={2}
-            />
-          ))}
-
-          {/* 最新の値だけ数値を添える */}
+        {/* 目盛りは左の余白に、補助線の高さに合わせて置く */}
+        <SvgText
+          x={GUTTER - 8}
+          y={y(rawMax) + 3.5}
+          fill={colors.textMuted}
+          fontSize={10}
+          textAnchor="end"
+        >
+          {`${fmt(rawMax)}${unit}`}
+        </SvgText>
+        {rawMax !== rawMin ? (
           <SvgText
-            x={Math.min(last.cx, width - PAD_X - 4)}
-            y={Math.max(last.cy - 10, 10)}
+            x={GUTTER - 8}
+            y={y(rawMin) + 3.5}
+            fill={colors.textMuted}
+            fontSize={10}
+            textAnchor="end"
+          >
+            {`${fmt(rawMin)}${unit}`}
+          </SvgText>
+        ) : null}
+
+        {points.length > 1 ? (
+          <Polyline
+            points={polyline}
+            fill="none"
+            stroke={colors.accent}
+            strokeWidth={2}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        ) : null}
+
+        {coords.map((c, i) => (
+          <Circle
+            key={`${c.date}-${i}`}
+            cx={c.cx}
+            cy={c.cy}
+            r={i === coords.length - 1 ? 4.5 : 3}
+            fill={i === coords.length - 1 ? colors.accent : colors.surface}
+            stroke={colors.accent}
+            strokeWidth={2}
+          />
+        ))}
+
+        {showLastValue ? (
+          <SvgText
+            x={plotRight}
+            y={Math.max(last.cy - 10, 11)}
             fill={colors.accent}
             fontSize={11}
             fontWeight="bold"
@@ -132,21 +153,22 @@ export default function ProgressChart({ points, width, unit, height = 150 }: Pro
           >
             {`${fmt(last.value)}${unit}`}
           </SvgText>
+        ) : null}
 
-          <SvgText x={PAD_X} y={height - 6} fill={colors.textMuted} fontSize={10}>
-            {shortDate(points[0].date)}
+        <SvgText x={plotLeft} y={height - 5} fill={colors.textMuted} fontSize={10}>
+          {shortDate(points[0].date)}
+        </SvgText>
+        {points.length > 1 ? (
+          <SvgText
+            x={plotRight}
+            y={height - 5}
+            fill={colors.textMuted}
+            fontSize={10}
+            textAnchor="end"
+          >
+            {shortDate(points[points.length - 1].date)}
           </SvgText>
-          {points.length > 1 ? (
-            <SvgText
-              x={width - PAD_X}
-              y={height - 6}
-              fill={colors.textMuted}
-              fontSize={10}
-              textAnchor="end"
-            >
-              {shortDate(points[points.length - 1].date)}
-            </SvgText>
-          ) : null}
+        ) : null}
       </Svg>
     </View>
   );

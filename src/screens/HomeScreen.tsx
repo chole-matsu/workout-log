@@ -11,8 +11,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Thumbnail from '../components/Thumbnail';
-import { formatSets, latestRecordFor, relativeDay, sortExercises } from '../format';
-import { colors, radius } from '../theme';
+import { formatTopSet, latestRecordFor, relativeDay, sortExercises } from '../format';
+import { colors, layout, radius } from '../theme';
 import { SORT_OPTIONS, type Exercise, type SortState, type WorkoutRecord } from '../types';
 
 type Props = {
@@ -26,8 +26,11 @@ type Props = {
 
 const COLUMNS = 3;
 const GAP = 10;
-const H_PADDING = 14;
+const H_PADDING = layout.gutter;
 const CARD_PADDING = 8;
+/** 種目名の表示行数。全カードでこの高さを確保して、行内の高さを揃える */
+const NAME_LINES = 2;
+const NAME_LINE_HEIGHT = 15;
 
 export default function HomeScreen({
   exercises,
@@ -50,10 +53,18 @@ export default function HomeScreen({
   );
 
   const summaries = useMemo(() => {
-    const map = new Map<string, { text: string; when: string } | null>();
+    const map = new Map<string, { top: string; meta: string } | null>();
     for (const ex of exercises) {
       const last = latestRecordFor(records, ex.id);
-      map.set(ex.id, last ? { text: formatSets(last.sets), when: relativeDay(last.date) } : null);
+      map.set(
+        ex.id,
+        last
+          ? {
+              top: formatTopSet(last.sets),
+              meta: `${last.sets.length}セット・${relativeDay(last.date)}`,
+            }
+          : null
+      );
     }
     return map;
   }, [exercises, records]);
@@ -166,24 +177,24 @@ export default function HomeScreen({
               onPress={() => onOpen(item.id)}
               style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && styles.pressed]}
               accessibilityRole="button"
-              accessibilityLabel={`${item.name}${summary ? `、前回 ${summary.text}` : '、記録なし'}`}
+              accessibilityLabel={`${item.name}${summary ? `、前回 ${summary.top}` : '、記録なし'}`}
             >
               <Thumbnail exercise={item} size={thumbSize} borderRadius={radius.md} />
-              <Text style={styles.cardName} numberOfLines={2}>
-                {item.name}
+              {/* 名前の高さを固定して、名前が1行でも2行でもカードの高さを揃える */}
+              <View style={styles.cardNameBox}>
+                <Text style={styles.cardName} numberOfLines={NAME_LINES}>
+                  {item.name}
+                </Text>
+              </View>
+              <Text
+                style={[styles.cardSummary, !summary && styles.cardSummaryEmpty]}
+                numberOfLines={1}
+              >
+                {summary ? summary.top : '記録なし'}
               </Text>
-              {summary ? (
-                <>
-                  <Text style={styles.cardSummary} numberOfLines={1}>
-                    {summary.text}
-                  </Text>
-                  <Text style={styles.cardWhen} numberOfLines={1}>
-                    {summary.when}
-                  </Text>
-                </>
-              ) : (
-                <Text style={styles.cardNoData}>記録なし</Text>
-              )}
+              <Text style={styles.cardMeta} numberOfLines={1}>
+                {summary ? summary.meta : ' '}
+              </Text>
             </Pressable>
           );
         }}
@@ -258,16 +269,16 @@ const styles = StyleSheet.create({
     padding: CARD_PADDING,
     gap: 1,
   },
+  cardNameBox: { height: NAME_LINE_HEIGHT * NAME_LINES, marginTop: 7, justifyContent: 'flex-start' },
   cardName: {
     color: colors.text,
     fontSize: 12,
     fontWeight: '700',
-    marginTop: 7,
-    lineHeight: 15,
+    lineHeight: NAME_LINE_HEIGHT,
   },
-  cardSummary: { color: colors.accent, fontSize: 10, fontWeight: '600', marginTop: 2 },
-  cardWhen: { color: colors.textMuted, fontSize: 9 },
-  cardNoData: { color: colors.textMuted, fontSize: 10, marginTop: 2 },
+  cardSummary: { color: colors.accent, fontSize: 11, fontWeight: '700', marginTop: 3 },
+  cardSummaryEmpty: { color: colors.textMuted, fontWeight: '500' },
+  cardMeta: { color: colors.textMuted, fontSize: 9, marginTop: 1 },
   pressed: { opacity: 0.65 },
   empty: {
     flex: 1,

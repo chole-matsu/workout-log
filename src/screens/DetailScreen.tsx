@@ -25,7 +25,7 @@ import {
   totalVolume,
 } from '../format';
 import { today } from '../storage';
-import { colors, radius } from '../theme';
+import { colors, layout, radius } from '../theme';
 import type { Exercise, WorkoutRecord, WorkoutSet } from '../types';
 
 type Props = {
@@ -61,7 +61,7 @@ const METRICS: { key: Metric; label: string; unit: string }[] = [
 const CHART_LIMIT = 20;
 
 /** scrollContent の左右余白 */
-const H_PADDING = 16;
+const H_PADDING = layout.gutter;
 /** chartCard の左右の内側余白と枠線 */
 const CHART_CARD_INSET = 4 * 2 + 2;
 
@@ -202,7 +202,7 @@ export default function DetailScreen({
         <Pressable
           onPress={onBack}
           hitSlop={12}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.iconButtonLeft, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel="戻る"
         >
@@ -214,7 +214,7 @@ export default function DetailScreen({
         <Pressable
           onPress={onEdit}
           hitSlop={12}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.iconButtonRight, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel="種目を編集"
         >
@@ -235,7 +235,9 @@ export default function DetailScreen({
             <Text style={styles.lastLabel}>前回の記録</Text>
             {lastRecord ? (
               <>
-                <Text style={styles.lastValue}>{formatSets(lastRecord.sets)}</Text>
+                <Text style={styles.lastValue} numberOfLines={2}>
+                  {formatSets(lastRecord.sets)}
+                </Text>
                 <Text style={styles.lastMeta}>
                   {formatDate(lastRecord.date)}・{relativeDay(lastRecord.date)}・総挙上量{' '}
                   {totalVolume(lastRecord.sets).toLocaleString('ja-JP')}kg
@@ -319,14 +321,18 @@ export default function DetailScreen({
               </View>
             ))}
 
-            <Pressable
-              onPress={addRow}
-              style={({ pressed }) => [styles.addSetButton, pressed && styles.pressed]}
-              accessibilityRole="button"
-            >
-              <MaterialCommunityIcons name="plus" size={18} color={colors.accent} />
-              <Text style={styles.addSetLabel}>セットを追加</Text>
-            </Pressable>
+            {/* 削除列を空けておき、上の入力欄と右端を揃える */}
+            <View style={styles.addSetRow}>
+              <Pressable
+                onPress={addRow}
+                style={({ pressed }) => [styles.addSetButton, pressed && styles.pressed]}
+                accessibilityRole="button"
+              >
+                <MaterialCommunityIcons name="plus" size={18} color={colors.accent} />
+                <Text style={styles.addSetLabel}>セットを追加</Text>
+              </Pressable>
+              <View style={styles.colRemove} />
+            </View>
           </View>
 
           <TextInput
@@ -467,19 +473,30 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 8,
+    gap: 4,
+    paddingHorizontal: H_PADDING,
     paddingBottom: 12,
   },
-  iconButton: {
+  // 負のマージンでアイコンの見た目を gutter に合わせる（当たり判定は 36px のまま）
+  iconButtonLeft: {
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 18,
+    marginLeft: layout.headerIconOffset,
+  },
+  iconButtonRight: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 18,
+    marginRight: layout.headerIconOffset,
   },
   headerTitle: {
     flex: 1,
+    minWidth: 0,
     color: colors.text,
     fontSize: 20,
     fontWeight: '700',
@@ -506,8 +523,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1,
   },
-  lastValue: { color: colors.text, fontSize: 21, fontWeight: '800' },
-  lastMeta: { color: colors.textMuted, fontSize: 11 },
+  lastValue: { color: colors.text, fontSize: 18, fontWeight: '800', lineHeight: 23 },
+  lastMeta: { color: colors.textMuted, fontSize: 11, lineHeight: 15 },
   lastMemo: { color: colors.textMuted, fontSize: 12, fontStyle: 'italic', marginTop: 2 },
   lastEmpty: { color: colors.textMuted, fontSize: 16, marginTop: 4 },
 
@@ -542,9 +559,10 @@ const styles = StyleSheet.create({
   },
   setRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   setIndex: { color: colors.textMuted, fontSize: 15, textAlign: 'center' },
-  colIndex: { width: 42 },
-  colInput: { flex: 1 },
-  colRemove: { width: 30 },
+  colIndex: { width: 40 },
+  // minWidth: 0 が無いと、input の既定の固有幅（約217px）が縮まず画面からはみ出す
+  colInput: { flex: 1, minWidth: 0 },
+  colRemove: { width: 32 },
   input: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.sm,
@@ -557,7 +575,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   removeButton: { alignItems: 'center', justifyContent: 'center', height: 40 },
+  addSetRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
   addSetButton: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -565,7 +586,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: radius.sm,
     backgroundColor: colors.accentSoft,
-    marginTop: 2,
   },
   addSetLabel: { color: colors.accent, fontSize: 14, fontWeight: '700' },
 
@@ -622,29 +642,31 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     overflow: 'hidden',
   },
-  historyRow: { flexDirection: 'row', alignItems: 'center' },
+  historyRow: { flexDirection: 'row', alignItems: 'flex-start' },
   historyRowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   historyRowEditing: { backgroundColor: colors.accentSoft },
   historyMain: {
     flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     paddingVertical: 12,
     paddingLeft: 14,
-    alignItems: 'center',
+    // 表として読めるよう、日付と内容の1行目の上端を揃える
+    alignItems: 'flex-start',
   },
-  historyDateCol: { width: 66 },
-  historyDate: { color: colors.text, fontSize: 13, fontWeight: '700' },
-  historyWhen: { color: colors.textMuted, fontSize: 10 },
-  historyBody: { flex: 1, gap: 1 },
-  historySets: { color: colors.text, fontSize: 14, fontWeight: '600' },
-  historyVolume: { color: colors.textMuted, fontSize: 10 },
-  historyMemo: { color: colors.textMuted, fontSize: 11, fontStyle: 'italic' },
+  historyDateCol: { width: 62 },
+  historyDate: { color: colors.text, fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  historyWhen: { color: colors.textMuted, fontSize: 10, lineHeight: 13 },
+  historyBody: { flex: 1, minWidth: 0, gap: 1 },
+  historySets: { color: colors.text, fontSize: 14, fontWeight: '600', lineHeight: 18 },
+  historyVolume: { color: colors.textMuted, fontSize: 10, lineHeight: 13 },
+  historyMemo: { color: colors.textMuted, fontSize: 11, fontStyle: 'italic', lineHeight: 15 },
   historyDelete: {
     width: 44,
-    height: 44,
+    paddingVertical: 12,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   historyHint: { color: colors.textMuted, fontSize: 11, marginTop: 6, paddingLeft: 2 },
 

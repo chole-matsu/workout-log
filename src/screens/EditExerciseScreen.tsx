@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,7 +19,10 @@ import { useDialog } from '../components/DialogProvider';
 import Thumbnail from '../components/Thumbnail';
 import { EXERCISE_ICONS } from '../icons';
 import { persistPhoto } from '../storage';
-import { colors, PALETTE, radius } from '../theme';
+import { colors, layout, PALETTE, radius } from '../theme';
+
+const ICON_COLUMNS = 5;
+const ICON_GAP = 10;
 import type { Exercise } from '../types';
 
 export type ExerciseDraft = {
@@ -39,7 +43,13 @@ type Props = {
 export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDelete }: Props) {
   const insets = useSafeAreaInsets();
   const dialog = useDialog();
+  const { width: screenWidth } = useWindowDimensions();
   const isNew = !exercise;
+
+  // 固定サイズだと右側に余白が残るので、画面幅から1マスの大きさを出す
+  const iconCellSize = Math.floor(
+    (screenWidth - layout.gutter * 2 - ICON_GAP * (ICON_COLUMNS - 1)) / ICON_COLUMNS
+  );
 
   const [name, setName] = useState(exercise?.name ?? '');
   const [icon, setIcon] = useState<string>(exercise?.icon ?? EXERCISE_ICONS[0]);
@@ -133,7 +143,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
           <MaterialCommunityIcons name="close" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>{isNew ? '種目を追加' : '種目を編集'}</Text>
-        <View style={styles.iconButton} />
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
@@ -208,6 +218,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
                   }}
                   style={({ pressed }) => [
                     styles.iconCell,
+                    { width: iconCellSize, height: iconCellSize },
                     selected && { borderColor: color, backgroundColor: `${color}22` },
                     pressed && styles.pressed,
                   ]}
@@ -216,7 +227,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
                 >
                   <MaterialCommunityIcons
                     name={name as any}
-                    size={24}
+                    size={Math.round(iconCellSize * 0.44)}
                     color={selected ? color : colors.textMuted}
                   />
                 </Pressable>
@@ -281,15 +292,19 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: layout.gutter,
     paddingBottom: 12,
   },
+  // 負のマージンでアイコンの見た目を gutter に合わせる（当たり判定は 36px のまま）
   iconButton: {
-    width: 40,
+    width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: layout.headerIconOffset,
   },
+  // タイトルを中央に保つための、左ボタンと同じ幅の余白
+  headerSpacer: { width: 36, marginRight: layout.headerIconOffset },
   headerTitle: {
     flex: 1,
     color: colors.text,
@@ -298,7 +313,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: layout.gutter,
     paddingBottom: 40,
     gap: 22,
   },
@@ -343,10 +358,8 @@ const styles = StyleSheet.create({
   },
   clearPhotoLabel: { color: colors.danger, fontSize: 13, fontWeight: '600' },
 
-  iconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  iconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: ICON_GAP },
   iconCell: {
-    width: 52,
-    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,

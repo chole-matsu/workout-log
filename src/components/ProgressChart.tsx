@@ -1,7 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 
-import { colors, radius } from '../theme';
+import { useTheme, useThemedStyles } from './ThemeProvider';
+import { radius, type Palette } from '../theme';
 
 export type ChartPoint = {
   /** YYYY-MM-DD */
@@ -41,6 +42,9 @@ const fmt = (n: number) => (Number.isInteger(n) ? `${n}` : n.toFixed(1));
  * 軸は描かず、上下の値と両端の日付だけを添えた最小限の表示にしている。
  */
 export default function ProgressChart({ points, width, unit, height = 150 }: Props) {
+  const { c } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+
   if (points.length === 0 || width <= 0) {
     return (
       <View style={[styles.placeholder, { height }]}>
@@ -67,7 +71,7 @@ export default function ProgressChart({ points, width, unit, height = 150 }: Pro
   const y = (v: number) => PAD_TOP + plotH * (1 - (v - min) / (max - min));
 
   const coords = points.map((p, i) => ({ cx: x(i), cy: y(p.value), ...p }));
-  const polyline = coords.map((c) => `${c.cx},${c.cy}`).join(' ');
+  const polyline = coords.map((pt) => `${pt.cx},${pt.cy}`).join(' ');
   const last = coords[coords.length - 1];
   // 目盛りと同じ値なら重ねて出さない
   const showLastValue = last.value !== rawMax && last.value !== rawMin;
@@ -81,7 +85,7 @@ export default function ProgressChart({ points, width, unit, height = 150 }: Pro
           y1={y(rawMax)}
           x2={plotRight}
           y2={y(rawMax)}
-          stroke={colors.border}
+          stroke={c.border}
           strokeWidth={1}
           strokeDasharray="3 4"
         />
@@ -91,7 +95,7 @@ export default function ProgressChart({ points, width, unit, height = 150 }: Pro
             y1={y(rawMin)}
             x2={plotRight}
             y2={y(rawMin)}
-            stroke={colors.border}
+            stroke={c.border}
             strokeWidth={1}
             strokeDasharray="3 4"
           />
@@ -101,7 +105,7 @@ export default function ProgressChart({ points, width, unit, height = 150 }: Pro
         <SvgText
           x={GUTTER - 8}
           y={y(rawMax) + 3.5}
-          fill={colors.textMuted}
+          fill={c.textMuted}
           fontSize={10}
           textAnchor="end"
         >
@@ -111,7 +115,7 @@ export default function ProgressChart({ points, width, unit, height = 150 }: Pro
           <SvgText
             x={GUTTER - 8}
             y={y(rawMin) + 3.5}
-            fill={colors.textMuted}
+            fill={c.textMuted}
             fontSize={10}
             textAnchor="end"
           >
@@ -123,21 +127,21 @@ export default function ProgressChart({ points, width, unit, height = 150 }: Pro
           <Polyline
             points={polyline}
             fill="none"
-            stroke={colors.accent}
+            stroke={c.accent}
             strokeWidth={2}
             strokeLinejoin="round"
             strokeLinecap="round"
           />
         ) : null}
 
-        {coords.map((c, i) => (
+        {coords.map((pt, i) => (
           <Circle
-            key={`${c.date}-${i}`}
-            cx={c.cx}
-            cy={c.cy}
+            key={`${pt.date}-${i}`}
+            cx={pt.cx}
+            cy={pt.cy}
             r={i === coords.length - 1 ? 4.5 : 3}
-            fill={i === coords.length - 1 ? colors.accent : colors.surface}
-            stroke={colors.accent}
+            fill={i === coords.length - 1 ? c.accent : c.surface}
+            stroke={c.accent}
             strokeWidth={2}
           />
         ))}
@@ -146,7 +150,7 @@ export default function ProgressChart({ points, width, unit, height = 150 }: Pro
           <SvgText
             x={plotRight}
             y={Math.max(last.cy - 10, 11)}
-            fill={colors.accent}
+            fill={c.accent}
             fontSize={11}
             fontWeight="bold"
             textAnchor="end"
@@ -155,14 +159,14 @@ export default function ProgressChart({ points, width, unit, height = 150 }: Pro
           </SvgText>
         ) : null}
 
-        <SvgText x={plotLeft} y={height - 5} fill={colors.textMuted} fontSize={10}>
+        <SvgText x={plotLeft} y={height - 5} fill={c.textMuted} fontSize={10}>
           {shortDate(points[0].date)}
         </SvgText>
         {points.length > 1 ? (
           <SvgText
             x={plotRight}
             y={height - 5}
-            fill={colors.textMuted}
+            fill={c.textMuted}
             fontSize={10}
             textAnchor="end"
           >
@@ -174,14 +178,15 @@ export default function ProgressChart({ points, width, unit, height = 150 }: Pro
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
   placeholder: {
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: colors.border,
+    borderColor: c.border,
   },
-  placeholderText: { color: colors.textMuted, fontSize: 12 },
+  placeholderText: { color: c.textMuted, fontSize: 12 },
 });

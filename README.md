@@ -16,7 +16,7 @@ Expo Go」と表示して起動しなくなるため、Expo Go で動かして�
 - **履歴一覧** — 過去の記録を新しい順に一覧表示
 - **記録の編集・削除** — 履歴の行をタップすると、その日の記録を editable な入力欄に読み込む
 - **並び替え**：追加順 / 名前順 / 更新順の3基準。選択中のチップをもう一度押すと昇順⇄降順が入れ替わる
-- 画面下部に広告枠（いまはプレースホルダー）
+- **テーマ切り替え**：黒地の「ナイト」と白地の「デイライト」。トップ画面右上のパレットから変更でき、選択は端末に保存される
 
 ### 並び替えの仕様
 
@@ -56,6 +56,20 @@ Expo Go」と表示して起動しなくなるため、Expo Go で動かして�
   レイアウトで 0 を返すことがあり、そのまま余白を引くと負の値になって SVG の描画が
   失敗します（`Math.max(..., n)` で囲む）
 
+## テーマの決まりごと
+
+- **色を直接書かないこと。** 画面のスタイルは `const makeStyles = (c: Palette) => StyleSheet.create({...})`
+  の形でモジュールのトップレベルに置き、コンポーネント内で `useThemedStyles(makeStyles)` を呼びます。
+  `StyleSheet.create` を即時実行すると、その時点の色で固まって切り替わりません
+- **`makeStyles` は必ずトップレベルに置くこと。** コンポーネントの中で定義すると毎回別の関数になり、
+  レンダーのたびにスタイルを作り直すことになります
+- **アクセント色の上に乗せる文字は `c.onAccent` を使うこと。** 黒地では暗い色、白地では白になります。
+  `c.bg` を使うと白テーマで白地に白文字になって読めません
+- **`c` という名前を他で使わないこと。** `array.map((c) => ...)` のような書き方をすると
+  テーマの `c` を隠してしまいます（実際に踏みました）
+- **種目ごとの色は保存済みデータに入っています。** 暗い背景向けに選ばれた明るい色は白地だと
+  薄すぎるので、`Thumbnail` が `iconColor()` を通して濃さを自動調整します
+
 ## レイアウトの決まりごと
 
 画面をまたいで見た目を揃えるため、以下を守っています。
@@ -93,15 +107,16 @@ npx expo start --tunnel
 ```
 App.tsx                        画面遷移と、種目／記録データの管理
 src/types.ts                   データ型と並び替えの定義（SORT_OPTIONS）
-src/theme.ts                   配色・角丸・広告枠の高さ
+src/theme.ts                   テーマ定義（配色2種）・角丸・余白の基準
 src/components/Icon.tsx        全アイコンの SVG 定義（フォント不使用）
 src/icons.ts                   サムネイル用アイコン一覧（Icon.tsx の再エクスポート）
 src/storage.ts                 AsyncStorage への保存・読み込み、写真の永続化
 src/format.ts                  日付・セット表記の整形、最新記録の抽出、並び替え
 src/components/Thumbnail.tsx   写真 or アイコンのサムネイル
-src/components/AdBanner.tsx    画面下部の広告枠（AdMob 差し替え手順をコメントに記載）
 src/components/ProgressChart.tsx  記録の推移を描く折れ線グラフ
 src/components/DialogProvider.tsx 確認・通知ダイアログ（Alert.alert の代替）
+src/components/ThemeProvider.tsx  テーマの配布と useThemedStyles
+src/components/ThemePicker.tsx    テーマ選択モーダル（見本つき）
 src/screens/HomeScreen.tsx     トップ画面（3列グリッド＋並び替え）
 src/screens/DetailScreen.tsx   前回の記録の表示 ＋ 今回の記録の入力
 src/screens/EditExerciseScreen.tsx  種目の追加・編集・削除
@@ -226,20 +241,54 @@ eas submit --platform ios --latest
 - SDK 54 は Node v20.17.0 で問題なく動きます。ただし EAS Build で失敗する場合は
   Node を 20.19.4 以上に更新してください（`winget upgrade --id OpenJS.NodeJS.20`）。
 
-## 広告（AdMob）を有効にする
+## 広告（AdMob）を後から入れたくなったら
 
+画面下部にあった広告枠は削除済みです。入れ直す手順を残しておきます。
 Expo Go では AdMob のネイティブモジュールが動かないため、開発ビルドが必要です。
+
+**1. AdMob でアプリを登録**し、アプリ ID とバナー広告ユニット ID を取得します。
+
+**2. パッケージを入れる**
 
 ```bash
 npx expo install react-native-google-mobile-ads expo-dev-client
+```
+
+**3. `app.json` の `plugins` に追加**（ID は自分のものに置き換える）
+
+```json
+[
+  "react-native-google-mobile-ads",
+  {
+    "androidAppId": "ca-app-pub-XXXXXXXX~XXXXXXXX",
+    "iosAppId": "ca-app-pub-XXXXXXXX~XXXXXXXX"
+  }
+]
+```
+
+**4. 開発ビルドを作る**（Expo Go ではなくこのビルドで動かす）
+
+```bash
 eas build --platform ios --profile development
 ```
 
-`app.json` の `plugins` に AdMob の設定を追加し、
-`src/components/AdBanner.tsx` のコメントに従って `BannerAd` に差し替えてください。
+**5. バナーを置く。** アプリ起動時に一度だけ `mobileAds().initialize()` を呼び、
+`App.tsx` の `<View style={{ height: insets.bottom }} />` の直前に差し込みます。
+
+```tsx
+import mobileAds, { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+
+const adUnitId = __DEV__ ? TestIds.BANNER : 'ca-app-pub-XXXXXXXX/XXXXXXXX';
+
+<BannerAd unitId={adUnitId} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
+```
 
 **開発中は必ずテスト用の広告 ID (`TestIds.BANNER`) を使ってください。**
-自分の本番広告を自分でタップすると、AdMob アカウントが停止されることがあります。
+自分の本番広告を自分でタップすると、無効なトラフィックとみなされ
+AdMob アカウントが停止されることがあります。
+
+なお **PWA（GitHub Pages 版）では AdMob は使えません**。Google の規約で
+Web ページへの AdMob 掲載は禁止されています。
 
 App Store で公開する場合は、これに加えて
 App Tracking Transparency (ATT) の許可ダイアログと、プライバシーポリシーの掲載が必要です。

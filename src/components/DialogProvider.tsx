@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius } from '../theme';
+import { useThemedStyles } from './ThemeProvider';
+import { radius, type Palette } from '../theme';
 
 /**
  * React Native の Alert.alert は react-native-web では何も起きない。
@@ -46,6 +47,7 @@ export function useDialog(): DialogApi {
 }
 
 export default function DialogProvider({ children }: { children: React.ReactNode }) {
+  const styles = useThemedStyles(makeStyles);
   const [request, setRequest] = useState<Request | null>(null);
   // 連打で前の Promise が宙に浮かないよう、閉じるときに必ず解決する
   const pending = useRef<((ok: boolean) => void) | null>(null);
@@ -134,7 +136,8 @@ export default function DialogProvider({ children }: { children: React.ReactNode
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -145,15 +148,15 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 340,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: c.surfaceAlt,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: 20,
     gap: 8,
   },
-  title: { color: colors.text, fontSize: 16, fontWeight: '700', lineHeight: 22 },
-  message: { color: colors.textMuted, fontSize: 13, lineHeight: 19 },
+  title: { color: c.text, fontSize: 16, fontWeight: '700', lineHeight: 22 },
+  message: { color: c.textMuted, fontSize: 13, lineHeight: 19 },
   buttonRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   button: {
     flex: 1,
@@ -163,14 +166,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   cancelButton: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
-  cancelLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
-  confirmButton: { backgroundColor: colors.accent },
-  confirmLabel: { color: colors.bg, fontSize: 14, fontWeight: '800' },
-  destructiveButton: { backgroundColor: colors.danger },
-  destructiveLabel: { color: colors.bg, fontSize: 14, fontWeight: '800' },
+  cancelLabel: { color: c.text, fontSize: 14, fontWeight: '600' },
+  confirmButton: { backgroundColor: c.accent },
+  confirmLabel: { color: c.onAccent, fontSize: 14, fontWeight: '800' },
+  destructiveButton: { backgroundColor: c.danger },
+  destructiveLabel: { color: c.onAccent, fontSize: 14, fontWeight: '800' },
   pressed: { opacity: 0.7 },
 });

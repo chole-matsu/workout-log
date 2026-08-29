@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1240" width="1024" height="1024">
+  <!-- 筋トレ記録のロゴ。ダンベル＋チェックマーク。
+       図形だけで作ってあるので、どの大きさに書き出しても崩れない。
+       中心線 x=620 で左右対称。 -->
+  <rect width="1240" height="1240" fill="#FFFFFF"/>
+
+  <g fill="#313A45">
+    <!-- バーは左右のプレートをつなぐ。リングと重なって「G」のような形になる -->
+    <rect x="330" y="586" width="580" height="72" rx="8"/>
+    <circle cx="620" cy="622" r="205" fill="none" stroke="#313A45" stroke-width="95"/>
+
+    <!-- 内側の大きいプレート。リングとの間にバーが見える隙間を空ける -->
+    <rect x="180" y="418" width="156" height="408" rx="58"/>
+    <rect x="904" y="418" width="156" height="408" rx="58"/>
+
+    <!-- 外側の小さいプレート -->
+    <rect x="88" y="504" width="76" height="236" rx="35"/>
+    <rect x="1076" y="504" width="76" height="236" rx="35"/>
+  </g>
+
+  <!-- チェックマークは最前面。右上はリングの外まで伸ばす -->
+  <path d="M470 632 L600 755 L893 418"
+        fill="none" stroke="#22C6A8" stroke-width="98"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

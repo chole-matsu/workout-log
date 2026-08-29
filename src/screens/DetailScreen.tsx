@@ -25,7 +25,8 @@ import {
   totalVolume,
 } from '../format';
 import { today } from '../storage';
-import { colors, layout, radius } from '../theme';
+import { useTheme, useThemedStyles } from '../components/ThemeProvider';
+import { layout, radius, type Palette } from '../theme';
 import type { Exercise, WorkoutRecord, WorkoutSet } from '../types';
 
 type Props = {
@@ -76,6 +77,8 @@ export default function DetailScreen({
 }: Props) {
   const insets = useSafeAreaInsets();
   const dialog = useDialog();
+  const { c } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { width: screenWidth } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const inputSectionY = useRef(0);
@@ -207,7 +210,7 @@ export default function DetailScreen({
           accessibilityRole="button"
           accessibilityLabel="戻る"
         >
-          <Icon name="chevron-left" size={28} color={colors.text} />
+          <Icon name="chevron-left" size={28} color={c.text} />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>
           {exercise.name}
@@ -219,7 +222,7 @@ export default function DetailScreen({
           accessibilityRole="button"
           accessibilityLabel="種目を編集"
         >
-          <Icon name="pencil" size={20} color={colors.textMuted} />
+          <Icon name="pencil" size={20} color={c.textMuted} />
         </Pressable>
       </View>
 
@@ -268,7 +271,7 @@ export default function DetailScreen({
                 style={({ pressed }) => [styles.cancelEdit, pressed && styles.pressed]}
                 accessibilityRole="button"
               >
-                <Icon name="close" size={14} color={colors.textMuted} />
+                <Icon name="close" size={14} color={c.textMuted} />
                 <Text style={styles.cancelEditLabel}>編集をやめる</Text>
               </Pressable>
             ) : null}
@@ -291,7 +294,7 @@ export default function DetailScreen({
                   onChangeText={(t) => updateRow(row.key, { weight: t })}
                   keyboardType="decimal-pad"
                   placeholder="0"
-                  placeholderTextColor={colors.textMuted}
+                  placeholderTextColor={c.textMuted}
                   selectTextOnFocus
                   returnKeyType="done"
                 />
@@ -301,7 +304,7 @@ export default function DetailScreen({
                   onChangeText={(t) => updateRow(row.key, { reps: t })}
                   keyboardType="number-pad"
                   placeholder="0"
-                  placeholderTextColor={colors.textMuted}
+                  placeholderTextColor={c.textMuted}
                   selectTextOnFocus
                   returnKeyType="done"
                 />
@@ -317,7 +320,7 @@ export default function DetailScreen({
                   accessibilityRole="button"
                   accessibilityLabel={`${index + 1}セット目を削除`}
                 >
-                  <Icon name="close" size={18} color={colors.textMuted} />
+                  <Icon name="close" size={18} color={c.textMuted} />
                 </Pressable>
               </View>
             ))}
@@ -329,7 +332,7 @@ export default function DetailScreen({
                 style={({ pressed }) => [styles.addSetButton, pressed && styles.pressed]}
                 accessibilityRole="button"
               >
-                <Icon name="plus" size={18} color={colors.accent} />
+                <Icon name="plus" size={18} color={c.accent} />
                 <Text style={styles.addSetLabel}>セットを追加</Text>
               </Pressable>
               <View style={styles.colRemove} />
@@ -341,7 +344,7 @@ export default function DetailScreen({
             value={memo}
             onChangeText={setMemo}
             placeholder="メモ（フォーム、体調など）"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={c.textMuted}
             multiline
           />
 
@@ -350,7 +353,7 @@ export default function DetailScreen({
             style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}
             accessibilityRole="button"
           >
-            <Icon name="check" size={20} color={colors.bg} />
+            <Icon name="check" size={20} color={c.onAccent} />
             <Text style={styles.saveLabel}>{isEditing ? '更新する' : '記録する'}</Text>
           </Pressable>
         </View>
@@ -452,7 +455,7 @@ export default function DetailScreen({
                       <Icon
                         name="trash"
                         size={18}
-                        color={colors.textMuted}
+                        color={c.textMuted}
                       />
                     </Pressable>
                   </View>
@@ -469,7 +472,8 @@ export default function DetailScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
   container: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -498,7 +502,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     minWidth: 0,
-    color: colors.text,
+    color: c.text,
     fontSize: 20,
     fontWeight: '700',
   },
@@ -511,23 +515,23 @@ const styles = StyleSheet.create({
   lastCard: {
     flexDirection: 'row',
     gap: 14,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: 16,
   },
   lastCardBody: { flex: 1, justifyContent: 'center', gap: 3 },
   lastLabel: {
-    color: colors.textMuted,
+    color: c.textMuted,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1,
   },
-  lastValue: { color: colors.text, fontSize: 18, fontWeight: '800', lineHeight: 23 },
-  lastMeta: { color: colors.textMuted, fontSize: 11, lineHeight: 15 },
-  lastMemo: { color: colors.textMuted, fontSize: 12, fontStyle: 'italic', marginTop: 2 },
-  lastEmpty: { color: colors.textMuted, fontSize: 16, marginTop: 4 },
+  lastValue: { color: c.text, fontSize: 18, fontWeight: '800', lineHeight: 23 },
+  lastMeta: { color: c.textMuted, fontSize: 11, lineHeight: 15 },
+  lastMemo: { color: c.textMuted, fontSize: 12, fontStyle: 'italic', marginTop: 2 },
+  lastEmpty: { color: c.textMuted, fontSize: 16, marginTop: 4 },
 
   sectionHeader: {
     flexDirection: 'row',
@@ -535,41 +539,41 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
   },
-  sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
-  sectionCount: { color: colors.textMuted, fontSize: 12 },
+  sectionTitle: { color: c.text, fontSize: 16, fontWeight: '700' },
+  sectionCount: { color: c.textMuted, fontSize: 12 },
   cancelEdit: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  cancelEditLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
+  cancelEditLabel: { color: c.textMuted, fontSize: 12, fontWeight: '600' },
 
   setsCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 8,
   },
   // 編集中はどの記録を触っているか分かるよう枠を強調する
-  setsCardEditing: { borderColor: colors.accent },
+  setsCardEditing: { borderColor: c.accent },
   setHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   setHeaderCell: {
-    color: colors.textMuted,
+    color: c.textMuted,
     fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
   },
   setRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  setIndex: { color: colors.textMuted, fontSize: 15, textAlign: 'center' },
+  setIndex: { color: c.textMuted, fontSize: 15, textAlign: 'center' },
   colIndex: { width: 40 },
   // minWidth: 0 が無いと、input の既定の固有幅（約217px）が縮まず画面からはみ出す
   colInput: { flex: 1, minWidth: 0 },
   colRemove: { width: 32 },
   input: {
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: c.surfaceAlt,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: colors.border,
-    color: colors.text,
+    borderColor: c.border,
+    color: c.text,
     fontSize: 17,
     fontWeight: '600',
     textAlign: 'center',
@@ -586,16 +590,16 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: radius.sm,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: c.accentSoft,
   },
-  addSetLabel: { color: colors.accent, fontSize: 14, fontWeight: '700' },
+  addSetLabel: { color: c.accent, fontSize: 14, fontWeight: '700' },
 
   memoInput: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    color: colors.text,
+    borderColor: c.border,
+    color: c.text,
     fontSize: 14,
     padding: 14,
     minHeight: 72,
@@ -608,12 +612,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.accent,
+    backgroundColor: c.accent,
     borderRadius: radius.md,
     paddingVertical: 16,
     marginTop: 12,
   },
-  saveLabel: { color: colors.bg, fontSize: 16, fontWeight: '800' },
+  saveLabel: { color: c.bg, fontSize: 16, fontWeight: '800' },
 
   metricRow: { flexDirection: 'row', gap: 6 },
   metricChip: {
@@ -621,31 +625,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
-  metricChipSelected: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-  metricLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '600' },
-  metricLabelSelected: { color: colors.accent },
+  metricChipSelected: { borderColor: c.accent, backgroundColor: c.accentSoft },
+  metricLabel: { color: c.textMuted, fontSize: 11, fontWeight: '600' },
+  metricLabelSelected: { color: c.accent },
   chartCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingVertical: 8,
     paddingHorizontal: 4,
   },
 
   historyCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     overflow: 'hidden',
   },
   historyRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  historyRowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-  historyRowEditing: { backgroundColor: colors.accentSoft },
+  historyRowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  historyRowEditing: { backgroundColor: c.accentSoft },
   historyMain: {
     flex: 1,
     minWidth: 0,
@@ -657,19 +661,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   historyDateCol: { width: 62 },
-  historyDate: { color: colors.text, fontSize: 13, fontWeight: '700', lineHeight: 18 },
-  historyWhen: { color: colors.textMuted, fontSize: 10, lineHeight: 13 },
+  historyDate: { color: c.text, fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  historyWhen: { color: c.textMuted, fontSize: 10, lineHeight: 13 },
   historyBody: { flex: 1, minWidth: 0, gap: 1 },
-  historySets: { color: colors.text, fontSize: 14, fontWeight: '600', lineHeight: 18 },
-  historyVolume: { color: colors.textMuted, fontSize: 10, lineHeight: 13 },
-  historyMemo: { color: colors.textMuted, fontSize: 11, fontStyle: 'italic', lineHeight: 15 },
+  historySets: { color: c.text, fontSize: 14, fontWeight: '600', lineHeight: 18 },
+  historyVolume: { color: c.textMuted, fontSize: 10, lineHeight: 13 },
+  historyMemo: { color: c.textMuted, fontSize: 11, fontStyle: 'italic', lineHeight: 15 },
   historyDelete: {
     width: 44,
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
-  historyHint: { color: colors.textMuted, fontSize: 11, marginTop: 6, paddingLeft: 2 },
+  historyHint: { color: c.textMuted, fontSize: 11, marginTop: 6, paddingLeft: 2 },
 
   pressed: { opacity: 0.65 },
 });

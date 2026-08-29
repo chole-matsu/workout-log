@@ -2,12 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Directory, File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 
-import { PALETTE } from './theme';
+import { DEFAULT_THEME, THEMES, type ThemeName } from './theme';
 import { DEFAULT_SORT, type Exercise, type SortState, type WorkoutRecord } from './types';
 
 const EXERCISES_KEY = 'workout-log/exercises/v1';
 const RECORDS_KEY = 'workout-log/records/v1';
 const SORT_KEY = 'workout-log/sort/v2';
+const THEME_KEY = 'workout-log/theme/v1';
 const PHOTO_DIR_NAME = 'thumbnails';
 
 export function newId(): string {
@@ -47,11 +48,12 @@ function seedExercises(): Exercise[] {
     ['アームカール', 'arm-flex'],
   ];
   const now = Date.now();
+  const colors = THEMES[DEFAULT_THEME].exerciseColors;
   return seeds.map(([name, icon], i) => ({
     id: newId(),
     name,
     icon,
-    color: PALETTE[i % PALETTE.length],
+    color: colors[i % colors.length],
     createdAt: now + i,
   }));
 }
@@ -91,6 +93,20 @@ export async function loadSort(): Promise<SortState> {
 
 export async function saveSort(sort: SortState): Promise<void> {
   await writeJson(SORT_KEY, sort);
+}
+
+export async function loadTheme(): Promise<ThemeName> {
+  try {
+    const raw = await AsyncStorage.getItem(THEME_KEY);
+    // 保存値が壊れていても落ちないよう、既知の名前だけ受け入れる
+    return raw && raw in THEMES ? (raw as ThemeName) : DEFAULT_THEME;
+  } catch {
+    return DEFAULT_THEME;
+  }
+}
+
+export async function saveTheme(name: ThemeName): Promise<void> {
+  await AsyncStorage.setItem(THEME_KEY, name);
 }
 
 /** Web 用サムネイルの一辺（px）。表示は最大 128px なので 256 あれば足りる */

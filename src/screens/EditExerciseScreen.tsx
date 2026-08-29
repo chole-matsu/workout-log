@@ -19,7 +19,8 @@ import { useDialog } from '../components/DialogProvider';
 import Thumbnail from '../components/Thumbnail';
 import { EXERCISE_ICONS } from '../icons';
 import { persistPhoto } from '../storage';
-import { colors, layout, PALETTE, radius } from '../theme';
+import { useTheme, useThemedStyles } from '../components/ThemeProvider';
+import { layout, radius, type Palette } from '../theme';
 
 import type { Exercise } from '../types';
 
@@ -44,6 +45,8 @@ type Props = {
 export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDelete }: Props) {
   const insets = useSafeAreaInsets();
   const dialog = useDialog();
+  const { c, exerciseColors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { width: screenWidth } = useWindowDimensions();
   const isNew = !exercise;
 
@@ -58,7 +61,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
   const [name, setName] = useState(exercise?.name ?? '');
   const [icon, setIcon] = useState<string>(exercise?.icon ?? EXERCISE_ICONS[0]);
   const [photoUri, setPhotoUri] = useState<string | undefined>(exercise?.photoUri);
-  const [color, setColor] = useState(exercise?.color ?? PALETTE[0]);
+  const [color, setColor] = useState(exercise?.color ?? exerciseColors[0]);
   const [saving, setSaving] = useState(false);
 
   const pickFromCamera = async () => {
@@ -144,7 +147,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
           accessibilityRole="button"
           accessibilityLabel="キャンセル"
         >
-          <Icon name="close" size={24} color={colors.text} />
+          <Icon name="close" size={24} color={c.text} />
         </Pressable>
         <Text style={styles.headerTitle}>{isNew ? '種目を追加' : '種目を編集'}</Text>
         <View style={styles.headerSpacer} />
@@ -166,7 +169,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
             value={name}
             onChangeText={setName}
             placeholder="例: ベンチプレス"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={c.textMuted}
             returnKeyType="done"
             maxLength={30}
           />
@@ -180,7 +183,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
               style={({ pressed }) => [styles.photoButton, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              <Icon name="camera" size={20} color={colors.text} />
+              <Icon name="camera" size={20} color={c.text} />
               <Text style={styles.photoButtonLabel}>写真を撮る</Text>
             </Pressable>
             <Pressable
@@ -188,7 +191,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
               style={({ pressed }) => [styles.photoButton, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              <Icon name="image" size={20} color={colors.text} />
+              <Icon name="image" size={20} color={c.text} />
               <Text style={styles.photoButtonLabel}>写真を選ぶ</Text>
             </Pressable>
           </View>
@@ -199,7 +202,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
               style={({ pressed }) => [styles.clearPhoto, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              <Icon name="trash" size={16} color={colors.danger} />
+              <Icon name="trash" size={16} color={c.danger} />
               <Text style={styles.clearPhotoLabel}>写真を外してアイコンに戻す</Text>
             </Pressable>
           ) : null}
@@ -232,7 +235,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
                   <Icon
                     name={name}
                     size={Math.round(iconCellSize * 0.44)}
-                    color={selected ? color : colors.textMuted}
+                    color={selected ? color : c.textMuted}
                   />
                 </Pressable>
               );
@@ -243,18 +246,18 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>アイコンの色</Text>
           <View style={styles.colorRow}>
-            {PALETTE.map((c) => (
+            {exerciseColors.map((swatch) => (
               <Pressable
-                key={c}
-                onPress={() => setColor(c)}
+                key={swatch}
+                onPress={() => setColor(swatch)}
                 style={({ pressed }) => [
                   styles.colorDot,
-                  { backgroundColor: c },
-                  c === color && styles.colorDotSelected,
+                  { backgroundColor: swatch },
+                  swatch === color && styles.colorDotSelected,
                   pressed && styles.pressed,
                 ]}
                 accessibilityRole="button"
-                accessibilityState={{ selected: c === color }}
+                accessibilityState={{ selected: swatch === color }}
               />
             ))}
           </View>
@@ -267,10 +270,10 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
           accessibilityRole="button"
         >
           {saving ? (
-            <ActivityIndicator color={colors.bg} />
+            <ActivityIndicator color={c.onAccent} />
           ) : (
             <>
-              <Icon name="check" size={20} color={colors.bg} />
+              <Icon name="check" size={20} color={c.onAccent} />
               <Text style={styles.saveLabel}>{isNew ? '追加する' : '保存する'}</Text>
             </>
           )}
@@ -282,7 +285,7 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
             style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
             accessibilityRole="button"
           >
-            <Icon name="trash" size={18} color={colors.danger} />
+            <Icon name="trash" size={18} color={c.danger} />
             <Text style={styles.deleteLabel}>この種目を削除</Text>
           </Pressable>
         ) : null}
@@ -291,7 +294,8 @@ export default function EditExerciseScreen({ exercise, onCancel, onSubmit, onDel
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
   container: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -311,7 +315,7 @@ const styles = StyleSheet.create({
   headerSpacer: { width: 36, marginRight: layout.headerIconOffset },
   headerTitle: {
     flex: 1,
-    color: colors.text,
+    color: c.text,
     fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
@@ -325,15 +329,15 @@ const styles = StyleSheet.create({
   preview: { alignItems: 'center', paddingVertical: 4 },
 
   field: { gap: 10 },
-  fieldLabel: { color: colors.text, fontSize: 14, fontWeight: '700' },
-  fieldNote: { color: colors.textMuted, fontSize: 12, fontWeight: '400' },
+  fieldLabel: { color: c.text, fontSize: 14, fontWeight: '700' },
+  fieldNote: { color: c.textMuted, fontSize: 12, fontWeight: '400' },
 
   nameInput: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    color: colors.text,
+    borderColor: c.border,
+    color: c.text,
     fontSize: 17,
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -346,13 +350,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingVertical: 14,
   },
-  photoButtonLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  photoButtonLabel: { color: c.text, fontSize: 14, fontWeight: '600' },
   clearPhoto: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -360,7 +364,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
   },
-  clearPhotoLabel: { color: colors.danger, fontSize: 13, fontWeight: '600' },
+  clearPhotoLabel: { color: c.danger, fontSize: 13, fontWeight: '600' },
 
   iconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: ICON_GAP },
   iconCell: {
@@ -368,8 +372,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
 
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
@@ -380,19 +384,19 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  colorDotSelected: { borderColor: colors.text },
+  colorDotSelected: { borderColor: c.text },
 
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.accent,
+    backgroundColor: c.accent,
     borderRadius: radius.md,
     paddingVertical: 16,
     minHeight: 54,
   },
-  saveLabel: { color: colors.bg, fontSize: 16, fontWeight: '800' },
+  saveLabel: { color: c.bg, fontSize: 16, fontWeight: '800' },
 
   deleteButton: {
     flexDirection: 'row',
@@ -401,7 +405,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 12,
   },
-  deleteLabel: { color: colors.danger, fontSize: 14, fontWeight: '600' },
+  deleteLabel: { color: c.danger, fontSize: 14, fontWeight: '600' },
 
   pressed: { opacity: 0.65 },
 });

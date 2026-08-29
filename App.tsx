@@ -3,8 +3,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import AdBanner from './src/components/AdBanner';
 import DialogProvider from './src/components/DialogProvider';
+import ThemeProvider, { useTheme, useThemedStyles } from './src/components/ThemeProvider';
+import ThemePicker from './src/components/ThemePicker';
 import DetailScreen from './src/screens/DetailScreen';
 import EditExerciseScreen, { type ExerciseDraft } from './src/screens/EditExerciseScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -13,13 +14,15 @@ import {
   loadExercises,
   loadRecords,
   loadSort,
+  loadTheme,
   newId,
   saveExercises,
   saveRecords,
   saveSort,
+  saveTheme,
   today,
 } from './src/storage';
-import { colors } from './src/theme';
+import { DEFAULT_THEME, type Palette, type ThemeName } from './src/theme';
 import { DEFAULT_SORT, type Exercise, type SortState, type WorkoutRecord, type WorkoutSet } from './src/types';
 
 type Route =
@@ -29,6 +32,9 @@ type Route =
 
 function Root() {
   const insets = useSafeAreaInsets();
+  const { c } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const [themePickerOpen, setThemePickerOpen] = useState(false);
 
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [records, setRecords] = useState<WorkoutRecord[]>([]);
@@ -143,7 +149,7 @@ function Root() {
   if (loading) {
     screen = (
       <View style={styles.centered}>
-        <ActivityIndicator color={colors.accent} size="large" />
+        <ActivityIndicator color={c.accent} size="large" />
       </View>
     );
   } else if (route.name === 'edit') {
@@ -185,34 +191,58 @@ function Root() {
         onChangeSort={handleChangeSort}
         onOpen={(exerciseId) => setRoute({ name: 'detail', exerciseId })}
         onAdd={() => setRoute({ name: 'edit' })}
+        onOpenTheme={() => setThemePickerOpen(true)}
       />
     );
   }
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style={c.statusBar} />
       <View style={styles.screen}>{screen}</View>
 
-      {/* 画面下部の広告枠。ホームインジケータに重ならないよう下に余白を足す */}
-      <AdBanner />
-      <View style={{ height: insets.bottom, backgroundColor: colors.surface }} />
+      <ThemePicker visible={themePickerOpen} onClose={() => setThemePickerOpen(false)} />
+
+      {/* ホームインジケータに重ならないよう下に余白を取る */}
+      <View style={{ height: insets.bottom }} />
     </View>
   );
 }
 
 export default function App() {
+  // テーマは配色そのものなので、他のデータより先に決まらないと一瞬ちらつく。
+  // ここで読み込んで ThemeProvider に渡す。
+  const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadTheme().then((stored) => {
+      if (!cancelled) setTheme(stored);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleChangeTheme = useCallback((name: ThemeName) => {
+    setTheme(name);
+    void saveTheme(name);
+  }, []);
+
   return (
     <SafeAreaProvider>
-      <DialogProvider>
-        <Root />
-      </DialogProvider>
+      <ThemeProvider name={theme} onChange={handleChangeTheme}>
+        <DialogProvider>
+          <Root />
+        </DialogProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.bg },
   screen: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

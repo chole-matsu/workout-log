@@ -1,6 +1,6 @@
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { colors } from '../theme';
+import { useTheme } from './ThemeProvider';
 
 /**
  * アプリで使うアイコンをすべて自前の SVG で描く。
@@ -45,6 +45,12 @@ const GLYPHS = {
     dots: [[8.4, 8.6, 1.3]],
   },
   tag: { paths: ['M20.4 13.4 11.6 4.6H4.6v7l8.8 8.8z'], dots: [[8, 8, 1.3]] },
+  palette: {
+    paths: [
+      'M12 3.4c-4.8 0-8.6 3.6-8.6 8.2 0 4.8 3.8 8.4 8.6 8.4 1.5 0 2.4-.9 2.4-2 0-.6-.3-1-.6-1.4-.3-.4-.5-.7-.5-1.2 0-.9.8-1.6 1.7-1.6h1.6c2.5 0 4-1.7 4-4.2 0-3.6-3.6-6.2-8.6-6.2z',
+    ],
+    dots: [[8.2, 10.4, 1.3], [12, 7.8, 1.3], [15.8, 10, 1.3]],
+  },
 
   // ── 並び替え ───────────────────────────────
   'sort-added': { paths: ['M12 3.5v9', 'M8.4 9.4 12 13l3.6-3.6', 'M4 15.5V20h16v-4.5'] },
@@ -242,32 +248,35 @@ export const EXERCISE_ICON_NAMES = [
 type Props = {
   name: string;
   size?: number;
+  /** 省略するとテーマの標準文字色になる */
   color?: string;
 };
 
-export default function Icon({ name, size = 24, color = colors.text }: Props) {
+export default function Icon({ name, size = 24, color }: Props) {
+  const { c } = useTheme();
   // 保存済みのデータが未知の名前を持っていても落ちないようにする
   const glyph: Glyph = (GLYPHS as Record<string, Glyph>)[name] ?? GLYPHS.dumbbell;
   const sw = glyph.strokeWidth ?? 1.8;
+  const stroke = color ?? c.text;
 
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {glyph.filled?.map((d, i) => <Path key={`f${i}`} d={d} fill={color} />)}
+      {glyph.filled?.map((d, i) => <Path key={`f${i}`} d={d} fill={stroke} />)}
       {glyph.paths?.map((d, i) => (
         <Path
           key={`p${i}`}
           d={d}
-          stroke={color}
+          stroke={stroke}
           strokeWidth={sw}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
       ))}
       {glyph.circles?.map(([cx, cy, r], i) => (
-        <Circle key={`c${i}`} cx={cx} cy={cy} r={r} stroke={color} strokeWidth={sw} />
+        <Circle key={`c${i}`} cx={cx} cy={cy} r={r} stroke={stroke} strokeWidth={sw} />
       ))}
       {glyph.dots?.map(([cx, cy, r], i) => (
-        <Circle key={`d${i}`} cx={cx} cy={cy} r={r} fill={color} />
+        <Circle key={`d${i}`} cx={cx} cy={cy} r={r} fill={stroke} />
       ))}
     </Svg>
   );

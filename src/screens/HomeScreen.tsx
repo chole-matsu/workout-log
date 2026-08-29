@@ -12,7 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '../components/Icon';
 import Thumbnail from '../components/Thumbnail';
 import { formatTopSet, latestRecordFor, relativeDay, sortExercises } from '../format';
-import { colors, layout, radius } from '../theme';
+import { useTheme, useThemedStyles } from '../components/ThemeProvider';
+import { layout, radius, type Palette } from '../theme';
 import { SORT_OPTIONS, type Exercise, type SortState, type WorkoutRecord } from '../types';
 
 type Props = {
@@ -22,6 +23,7 @@ type Props = {
   onChangeSort: (sort: SortState) => void;
   onOpen: (exerciseId: string) => void;
   onAdd: () => void;
+  onOpenTheme: () => void;
 };
 
 const COLUMNS = 3;
@@ -39,9 +41,12 @@ export default function HomeScreen({
   onChangeSort,
   onOpen,
   onAdd,
+  onOpenTheme,
 }: Props) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const { c } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   // 画面幅から左右余白と列間のすき間を引いて、1枚あたりの幅を出す。
   // 初回レイアウトでは width が 0 で来ることがあるので下限を設ける
@@ -94,15 +99,26 @@ export default function HomeScreen({
             {exercises.length > 0 ? `${exercises.length} 種目` : 'まずは種目を追加しましょう'}
           </Text>
         </View>
-        <Pressable
-          onPress={onAdd}
-          hitSlop={10}
-          style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="種目を追加"
-        >
-          <Icon name="plus" size={26} color={colors.bg} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            onPress={onOpenTheme}
+            hitSlop={10}
+            style={({ pressed }) => [styles.themeButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="テーマを変える"
+          >
+            <Icon name="palette" size={22} color={c.textMuted} />
+          </Pressable>
+          <Pressable
+            onPress={onAdd}
+            hitSlop={10}
+            style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="種目を追加"
+          >
+            <Icon name="plus" size={26} color={c.onAccent} />
+          </Pressable>
+        </View>
       </View>
 
       {exercises.length > 0 ? (
@@ -132,7 +148,7 @@ export default function HomeScreen({
                   <Icon
                     name={icon}
                     size={14}
-                    color={selected ? colors.accent : colors.textMuted}
+                    color={selected ? c.accent : c.textMuted}
                   />
                   <Text style={[styles.sortChipLabel, selected && styles.sortChipLabelSelected]}>
                     {label}
@@ -141,7 +157,7 @@ export default function HomeScreen({
                     <Icon
                       name={sort.direction === 'asc' ? 'arrow-up' : 'arrow-down'}
                       size={13}
-                      color={colors.accent}
+                      color={c.accent}
                     />
                   ) : null}
                 </Pressable>
@@ -164,7 +180,7 @@ export default function HomeScreen({
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Icon name="dumbbell" size={52} color={colors.border} />
+            <Icon name="dumbbell" size={52} color={c.border} />
             <Text style={styles.emptyTitle}>種目がありません</Text>
             <Text style={styles.emptyBody}>
               右上の ＋ から種目を追加してください。{'\n'}
@@ -205,7 +221,8 @@ export default function HomeScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
   container: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -214,19 +231,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: H_PADDING,
     paddingBottom: 14,
   },
-  headerTextGroup: { gap: 2 },
+  headerTextGroup: { gap: 2, flex: 1, minWidth: 0 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  themeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
-    color: colors.text,
+    color: c.text,
     fontSize: 30,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
-  subtitle: { color: colors.textMuted, fontSize: 13 },
+  subtitle: { color: c.textMuted, fontSize: 13 },
   addButton: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: colors.accent,
+    backgroundColor: c.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -245,16 +270,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
   sortChipSelected: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
+    borderColor: c.accent,
+    backgroundColor: c.accentSoft,
   },
-  sortChipLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
-  sortChipLabelSelected: { color: colors.accent },
-  sortHint: { color: colors.textMuted, fontSize: 11, paddingLeft: 2 },
+  sortChipLabel: { color: c.textMuted, fontSize: 12, fontWeight: '600' },
+  sortChipLabelSelected: { color: c.accent },
+  sortHint: { color: c.textMuted, fontSize: 11, paddingLeft: 2 },
 
   column: { gap: GAP },
   listContent: {
@@ -264,23 +289,23 @@ const styles = StyleSheet.create({
   },
   listContentEmpty: { flexGrow: 1 },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: CARD_PADDING,
     gap: 1,
   },
   cardNameBox: { height: NAME_LINE_HEIGHT * NAME_LINES, marginTop: 7, justifyContent: 'flex-start' },
   cardName: {
-    color: colors.text,
+    color: c.text,
     fontSize: 12,
     fontWeight: '700',
     lineHeight: NAME_LINE_HEIGHT,
   },
-  cardSummary: { color: colors.accent, fontSize: 11, fontWeight: '700', marginTop: 3 },
-  cardSummaryEmpty: { color: colors.textMuted, fontWeight: '500' },
-  cardMeta: { color: colors.textMuted, fontSize: 9, marginTop: 1 },
+  cardSummary: { color: c.accent, fontSize: 11, fontWeight: '700', marginTop: 3 },
+  cardSummaryEmpty: { color: c.textMuted, fontWeight: '500' },
+  cardMeta: { color: c.textMuted, fontSize: 9, marginTop: 1 },
   pressed: { opacity: 0.65 },
   empty: {
     flex: 1,
@@ -289,9 +314,9 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 32,
   },
-  emptyTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
+  emptyTitle: { color: c.text, fontSize: 17, fontWeight: '700' },
   emptyBody: {
-    color: colors.textMuted,
+    color: c.textMuted,
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 20,

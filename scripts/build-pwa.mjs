@@ -53,10 +53,8 @@ const manifest = {
   orientation: 'portrait',
   background_color: THEME_BG,
   theme_color: THEME_BG,
-  icons: [
-    { src: url('app-icon.png'), sizes: '1024x1024', type: 'image/png', purpose: 'any' },
-    { src: url('app-icon.png'), sizes: '1024x1024', type: 'image/png', purpose: 'maskable' },
-  ],
+  // maskable は円や角丸に切り抜かれる。このロゴは横長で端が切れるため 'any' だけにする。
+  icons: [{ src: url('app-icon.png'), sizes: '1024x1024', type: 'image/png', purpose: 'any' }],
 };
 await writeFile(path.join(DIST, 'manifest.webmanifest'), JSON.stringify(manifest, null, 2));
 

@@ -127,6 +127,15 @@ export default function DetailScreen({
     setRows((prev) => (prev.length <= 1 ? prev : prev.filter((r) => r.key !== key)));
   };
 
+  /**
+   * 入力中の重量と回数だけを空にする。
+   * 保存済みの記録には触らないので、押しても過去の履歴は変わらない。
+   * メモは別物なので消さない。
+   */
+  const clearInputs = () => {
+    setRows([makeRow()]);
+  };
+
   /** 入力欄を「今日の新規記録」の状態に戻す */
   const resetToNew = () => {
     setEditingId(null);
@@ -264,17 +273,30 @@ export default function DetailScreen({
             <Text style={styles.sectionTitle}>
               {isEditing ? `${formatDate(editingRecord.date)} の記録を編集` : '今回の記録'}
             </Text>
-            {isEditing ? (
+            <View style={styles.sectionActions}>
               <Pressable
-                onPress={resetToNew}
+                onPress={clearInputs}
                 hitSlop={8}
-                style={({ pressed }) => [styles.cancelEdit, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}
                 accessibilityRole="button"
+                accessibilityLabel="入力した重量と回数を消す"
               >
-                <Icon name="close" size={14} color={c.textMuted} />
-                <Text style={styles.cancelEditLabel}>編集をやめる</Text>
+                <Icon name="eraser" size={14} color={c.textMuted} />
+                <Text style={styles.headerActionLabel}>リセット</Text>
               </Pressable>
-            ) : null}
+
+              {isEditing ? (
+                <Pressable
+                  onPress={resetToNew}
+                  hitSlop={8}
+                  style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}
+                  accessibilityRole="button"
+                >
+                  <Icon name="close" size={14} color={c.textMuted} />
+                  <Text style={styles.headerActionLabel}>編集をやめる</Text>
+                </Pressable>
+              ) : null}
+            </View>
           </View>
 
           <View style={[styles.setsCard, isEditing && styles.setsCardEditing]}>
@@ -541,8 +563,9 @@ const makeStyles = (c: Palette) =>
   },
   sectionTitle: { color: c.text, fontSize: 16, fontWeight: '700' },
   sectionCount: { color: c.textMuted, fontSize: 12 },
-  cancelEdit: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  cancelEditLabel: { color: c.textMuted, fontSize: 12, fontWeight: '600' },
+  sectionActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  headerAction: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerActionLabel: { color: c.textMuted, fontSize: 12, fontWeight: '600' },
 
   setsCard: {
     backgroundColor: c.surface,
